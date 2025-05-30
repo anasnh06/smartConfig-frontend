@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,37 +15,50 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { User } from "@/types/entities"
 import { useStore } from "@/lib/store"
-import Link from "next/link"
 
 export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "username",
-    header: "Name",
-    cell: ({ row }) => {
-      return (
-        <Link href={`/users/${row.original.id}`} className="font-medium hover:underline">
-          {row.getValue("username")}
-        </Link>
-      )
-    },
+    header: "Username",
+    cell: ({ row }) => (
+      <Link href={`/users/${row.original.id}`} className="font-medium hover:underline">
+        {row.getValue("username")}
+      </Link>
+    ),
   },
   {
     accessorKey: "email",
     header: "Email",
   },
   {
-    accessorKey: "role",
-    header: "Role",
+    accessorKey: "is_active",
+    header: "Status",
+    cell: ({ row }) => (
+      <span className={row.getValue("is_active") ? "text-green-600" : "text-muted-foreground"}>
+        {row.getValue("is_active") ? "Active" : "Inactive"}
+      </span>
+    ),
   },
   {
-    accessorKey: "createdAt",
+    accessorKey: "created_at",
     header: "Created At",
     cell: ({ row }) => {
-      return new Date(row.getValue("createdAt")).toLocaleDateString()
+      const value = row.getValue("created_at") as string
+      return value ? new Date(value).toLocaleDateString() : "-"
     },
   },
   {
+    accessorKey: "updated_at",
+    header: "Updated At",
+    cell: ({ row }) => {
+      const value = row.getValue("updated_at") as string
+      return value ? new Date(value).toLocaleDateString() : "-"
+    },
+  },
+
+  {
     id: "actions",
+    enableHiding: false,
     cell: ({ row }) => {
       const user = row.original
       const store = useStore()

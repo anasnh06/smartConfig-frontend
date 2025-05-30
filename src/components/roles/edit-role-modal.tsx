@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
 import { Textarea } from "@/components/ui/textarea"
+import { useRolesStore } from "@/lib/store/roles"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -27,8 +28,13 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditRoleModal() {
+type EditRoleModalProps = {
+  onUpdated?: () => void
+}
+
+export function EditRoleModal({ onUpdated }: EditRoleModalProps) {
   const { isEditRoleModalOpen, closeEditRoleModal, selectedRole } = useStore()
+  const updateRole = useRolesStore((state) => state.updateRole)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -44,26 +50,33 @@ export function EditRoleModal() {
     if (selectedRole) {
       form.reset({
         name: selectedRole.name,
-        description: selectedRole.description,
+        description: selectedRole.description || "",
       })
     }
   }, [selectedRole, form])
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedRole) return
-
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeEditRoleModal()
-
-    toast({
-      title: "Role updated",
-      description: `${values.name} has been updated successfully.`,
-    })
+    try {
+      await updateRole(selectedRole.id, values)
+      toast({
+        title: "Role updated",
+        description: `${values.name} has been updated successfully.`,
+      })
+      closeEditRoleModal()
+      form.reset()
+      onUpdated?.() // ✅ Callback pour actualiser
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update role. Please try again.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

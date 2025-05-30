@@ -1,100 +1,84 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { Briefcase, MoreVertical, Server, Globe, Pencil, Trash } from "lucide-react"
+import { Briefcase, MoreHorizontal, Server, Pencil, Trash, Eye } from "lucide-react"
 
 import type { Project } from "@/types/entities"
-import { environments, getServersByProjectId } from "@/lib/mock-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { EditProjectModal } from "./edit-project-modal"
-import { DeleteProjectModal } from "./delete-project-modal"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useStore } from "@/lib/store"
 
 interface ProjectCardProps {
   project: Project
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-
-  const servers = getServersByProjectId(project.id)
-  const projectEnvironments = environments.filter((env) => project.environmentIds.includes(env.id))
+  const store = useStore()
+  const serverCount = project.servers?.length ?? 0
 
   return (
-    <>
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <div className="rounded-md bg-primary/10 p-2">
-                <Briefcase className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-base">{project.name}</CardTitle>
-                <CardDescription className="text-xs">
-                  {new Date(project.createdAt).toLocaleDateString()}
-                </CardDescription>
-              </div>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)}>
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardHeader>
-        <CardContent className="pb-3">
-          <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Server className="h-3 w-3" />
-              <span>{servers.length} Servers</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Globe className="h-3 w-3" />
-              <span>{projectEnvironments.length} Environments</span>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-1">
-            {projectEnvironments.slice(0, 3).map((env) => (
-              <Badge key={env.id} variant="outline" className="text-xs">
-                {env.name}
-              </Badge>
-            ))}
-            {projectEnvironments.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{projectEnvironments.length - 3} more
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter className="pt-1">
-          <Button asChild variant="ghost" size="sm" className="w-full">
-            <Link href={`/projects/${project.id}`}>View Details</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+    <Card className="flex flex-col">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div className="space-y-1">
+          <CardTitle className="flex items-center gap-2 leading-normal">
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <span className="line-clamp-1">{project.name}</span>
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            {new Date(project.created_at ?? "").toLocaleDateString()}
+          </CardDescription>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem asChild>
+              <Link href={`/projects/${project.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                View details
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => store.openEditProjectModal(project)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => store.openDeleteProjectModal(project)}>
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
 
-      <EditProjectModal project={project} open={isEditModalOpen} onOpenChange={setIsEditModalOpen} />
+      <CardContent className="flex-1 leading-normal">
+        <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+        <div className="mt-2 flex items-center gap-1">
+          <Server className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">
+            {serverCount} server{serverCount !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </CardContent>
 
-      <DeleteProjectModal project={project} open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen} />
-    </>
+      <CardFooter>
+        <Button variant="outline" className="w-full" asChild>
+          <Link href={`/projects/${project.id}`}>View Details</Link>
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }

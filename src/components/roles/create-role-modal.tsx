@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { z } from "zod"
 import { useForm } from "react-hook-form"
+import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import {
@@ -16,9 +15,10 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Textarea } from "@/components/ui/textarea"
+import { useRolesStore } from "@/lib/store/roles"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -29,7 +29,7 @@ type FormValues = z.infer<typeof formSchema>
 
 export function CreateRoleModal() {
   const { isCreateRoleModalOpen, closeCreateRoleModal } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
+  const addRole = useRolesStore((state) => state.addRole)
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
@@ -41,19 +41,21 @@ export function CreateRoleModal() {
   })
 
   const onSubmit = async (values: FormValues) => {
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeCreateRoleModal()
-    form.reset()
-
-    toast({
-      title: "Role created",
-      description: `${values.name} has been created successfully.`,
-    })
+    try {
+      await addRole(values)
+      toast({
+        title: "Role created",
+        description: `${values.name} has been created successfully.`,
+      })
+      closeCreateRoleModal()
+      form.reset()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while creating the role.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -96,9 +98,7 @@ export function CreateRoleModal() {
               <Button type="button" variant="outline" onClick={closeCreateRoleModal}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create"}
-              </Button>
+              <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
         </Form>

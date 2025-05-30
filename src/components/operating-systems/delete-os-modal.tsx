@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 
 import {
   AlertDialog,
@@ -14,32 +14,42 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { getServersByOperatingSystemId } from "@/lib/mock-data"
+import { useOperatingSystemsStore } from "@/lib/store/operating-systems"
 
-export function DeleteOsModal() {
+interface DeleteOsModalProps {
+  onDeleted?: () => void
+}
+
+export function DeleteOsModal({ onDeleted }: DeleteOsModalProps) {
   const { isDeleteOsModalOpen, closeDeleteOsModal, selectedOs } = useStore()
+  const removeOperatingSystem = useOperatingSystemsStore((state) => state.removeOperatingSystem)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  // Check if OS is in use
-  const associatedServers = selectedOs ? getServersByOperatingSystemId(selectedOs.id) : []
-  const isInUse = associatedServers.length > 0
+  const serverCount = useMemo(() => selectedOs?.servers?.length ?? 0, [selectedOs])
+  const isInUse = serverCount > 0
 
   const handleDelete = async () => {
     if (!selectedOs) return
-
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeDeleteOsModal()
-
-    toast({
-      title: "Operating System deleted",
-      description: `${selectedOs.name} ${selectedOs.version} has been deleted successfully.`,
-    })
+    try {
+      await removeOperatingSystem(selectedOs.id)
+      toast({
+        title: "Operating System deleted",
+        description: `${selectedOs.name} ${selectedOs.version ?? ""} has been deleted.`,
+      })
+      closeDeleteOsModal()
+      onDeleted?.()
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete OS",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -51,24 +61,22 @@ export function DeleteOsModal() {
             {isInUse ? (
               <>
                 <p className="mb-2 font-semibold text-destructive">
-                  Warning: This operating system is currently used by {associatedServers.length} server
-                  {associatedServers.length !== 1 ? "s" : ""}.
+                  Warning: This operating system is used by {serverCount} server{serverCount !== 1 ? "s" : ""}.
                 </p>
                 <p>
-                  Deleting this operating system will affect these servers. This action cannot be undone and may cause
-                  server operations to fail.
+                  Deleting it will affect these servers. This action is irreversible and may break provisioning logic.
                 </p>
               </>
             ) : (
               <p>
-                This action cannot be undone. This will permanently delete the operating system
-                {selectedOs ? ` "${selectedOs.name} ${selectedOs.version}"` : ""} and remove its data from the system.
+                This will permanently delete the operating system
+                {selectedOs ? ` "${selectedOs.name} ${selectedOs.version ?? ""}"` : ""}. This action cannot be undone.
               </p>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

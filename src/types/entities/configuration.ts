@@ -1,3 +1,4 @@
+import type { UserShort } from "./user"
 export type Configuration = {
   id: string
   name: string
@@ -6,3 +7,9 @@ export type Configuration = {
   createdAt: string
   updatedAt: string
 }
+
+export type ConfigurationShort = {
+  id: number
+  name: string
+}
+

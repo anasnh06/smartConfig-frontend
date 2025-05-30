@@ -1,33 +1,100 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Edit, Trash, Server, FileCode, Layers } from "lucide-react"
+import { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { DetailSection } from "@/components/ui/detail-section"
-import {
-  getOperatingSystemById,
-  getServersByOperatingSystemId,
-  getConfigurationsByOperatingSystemId,
-  getTemplatesByOperatingSystemId,
-} from "@/lib/mock-data"
+import { DataTable } from "@/components/ui/data-table"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+
 import { useStore } from "@/lib/store"
+import { getOperatingSystem } from "@/lib/api/operating-system"
+import type {
+  OperatingSystem,
+  ServerShort,
+  ConfigurationShort,
+  TemplateShort,
+} from "@/types/entities"
+
 import { EditOsModal } from "@/components/operating-systems/edit-os-modal"
 import { DeleteOsModal } from "@/components/operating-systems/delete-os-modal"
-import { DataTable } from "@/components/ui/data-table"
-import { columns as serverColumns } from "../../servers/columns"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Configuration, Template } from "@/types/entities"
-import { Badge } from "@/components/ui/badge"
 
 export default function OperatingSystemDetailPage() {
   const params = useParams()
-  const osId = params.osId as string
-  const os = getOperatingSystemById(osId)
+  const router = useRouter()
+  const osId = Number(params.osId)
   const store = useStore()
+
+  const [os, setOs] = useState<OperatingSystem | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchOperatingSystem = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getOperatingSystem(osId)
+      setOs(data)
+    } catch (error) {
+      console.error("Failed to fetch operating system", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleted = () => {
+    router.push("/operating-systems")
+  }
+
+  useEffect(() => {
+    fetchOperatingSystem()
+  }, [osId])
+
+  const serverColumns: ColumnDef<ServerShort>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <Link href={`/servers/${row.original.id}`} className="font-medium hover:underline">
+          {row.getValue("name")}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "ip_address",
+      header: "IP Address",
+    },
+  ]
+
+  const configColumns: ColumnDef<ConfigurationShort>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <Link href={`/configurations/${row.original.id}`} className="font-medium hover:underline">
+          {row.getValue("name")}
+        </Link>
+      ),
+    },
+  ]
+
+  const templateColumns: ColumnDef<TemplateShort>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <Link href={`/templates/${row.original.id}`} className="font-medium hover:underline">
+          {row.getValue("name")}
+        </Link>
+      ),
+    },
+  ]
+
+  if (isLoading) return <p className="text-center">Loading...</p>
 
   if (!os) {
     return (
@@ -43,85 +110,6 @@ export default function OperatingSystemDetailPage() {
     )
   }
 
-  // Get associated resources
-  const servers = getServersByOperatingSystemId(osId)
-  const configurations = getConfigurationsByOperatingSystemId(osId)
-  const templates = getTemplatesByOperatingSystemId(osId)
-
-  // Define columns for the configurations table
-  const configurationColumns: ColumnDef<Configuration>[] = [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => {
-        return (
-          <Link href={`/configurations/${row.original.id}`} className="font-medium hover:underline">
-            {row.getValue("name")}
-          </Link>
-        )
-      },
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string
-        return <span className="line-clamp-1">{description}</span>
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/configurations/${row.original.id}`}>View</Link>
-          </Button>
-        )
-      },
-    },
-  ]
-
-  // Define columns for the templates table
-  const templateColumns: ColumnDef<Template>[] = [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => {
-        return (
-          <Link href={`/templates/${row.original.id}`} className="font-medium hover:underline">
-            {row.getValue("name")}
-          </Link>
-        )
-      },
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string
-        return <span className="line-clamp-1">{description}</span>
-      },
-    },
-    {
-      accessorKey: "configurationIds",
-      header: "Configurations",
-      cell: ({ row }) => {
-        const configIds = row.getValue("configurationIds") as string[]
-        return configIds.length
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/templates/${row.original.id}`}>View</Link>
-          </Button>
-        )
-      },
-    },
-  ]
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -130,91 +118,53 @@ export default function OperatingSystemDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader
-          title={`${os.name} ${os.version}`}
-          description={`Operating system details for ${os.architecture}`}
-        />
+        <PageHeader title={`${os.name} ${os.version || ""}`} />
       </div>
 
       <div className="flex gap-4">
-        <Button variant="outline" className="gap-2" onClick={() => store.openEditOsModal(os)}>
+        <Button variant="outline" onClick={() => store.openEditOsModal(os)}>
           <Edit className="h-4 w-4" />
           Edit
         </Button>
-        <Button variant="outline" className="gap-2 text-destructive" onClick={() => store.openDeleteOsModal(os)}>
+        <Button variant="outline" className="text-destructive" onClick={() => store.openDeleteOsModal(os)}>
           <Trash className="h-4 w-4" />
           Delete
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Operating System Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-1 gap-4">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Name</dt>
-                <dd className="text-sm">{os.name}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Version</dt>
-                <dd className="text-sm">{os.version}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Architecture</dt>
-                <dd className="text-sm">
-                  <Badge variant="outline">{os.architecture}</Badge>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                <dd className="text-sm">{new Date(os.createdAt).toLocaleDateString()}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated</dt>
-                <dd className="text-sm">{new Date(os.updatedAt).toLocaleDateString()}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
+      <DetailSection title="Operating System Metadata">
+        <dl className="grid gap-4">
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+            <dd className="text-sm">
+              {os.created_at ? new Date(os.created_at).toLocaleString() : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
+            <dd className="text-sm">{os.created_by_user?.username || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
+            <dd className="text-sm">
+              {os.updated_at ? new Date(os.updated_at).toLocaleString() : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Updated By</dt>
+            <dd className="text-sm">{os.updated_by_user?.username || "—"}</dd>
+          </div>
+        </dl>
+      </DetailSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Usage Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Server className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-sm font-medium">Servers</span>
-                </div>
-                <span className="text-2xl font-bold">{servers.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileCode className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-sm font-medium">Configurations</span>
-                </div>
-                <span className="text-2xl font-bold">{configurations.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-sm font-medium">Templates</span>
-                </div>
-                <span className="text-2xl font-bold">{templates.length}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <DetailSection title="Servers with this Operating System">
-        {servers.length > 0 ? (
-          <DataTable columns={serverColumns} data={servers} searchColumn="name" searchPlaceholder="Search servers..." />
+      <DetailSection title="Servers using this OS">
+        {os.servers?.length ? (
+          <DataTable
+            columns={serverColumns}
+            data={os.servers}
+            searchColumn="name"
+            searchPlaceholder="Search servers..."
+          />
         ) : (
           <Card>
             <CardContent className="py-6 text-center">
@@ -226,10 +176,10 @@ export default function OperatingSystemDetailPage() {
       </DetailSection>
 
       <DetailSection title="Compatible Configurations">
-        {configurations.length > 0 ? (
+        {os.configurations?.length ? (
           <DataTable
-            columns={configurationColumns}
-            data={configurations}
+            columns={configColumns}
+            data={os.configurations}
             searchColumn="name"
             searchPlaceholder="Search configurations..."
           />
@@ -237,17 +187,17 @@ export default function OperatingSystemDetailPage() {
           <Card>
             <CardContent className="py-6 text-center">
               <FileCode className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No configurations are compatible with this operating system.</p>
+              <p className="mt-2 text-muted-foreground">No configurations are compatible with this OS.</p>
             </CardContent>
           </Card>
         )}
       </DetailSection>
 
       <DetailSection title="Compatible Templates">
-        {templates.length > 0 ? (
+        {os.templates?.length ? (
           <DataTable
             columns={templateColumns}
-            data={templates}
+            data={os.templates}
             searchColumn="name"
             searchPlaceholder="Search templates..."
           />
@@ -255,14 +205,14 @@ export default function OperatingSystemDetailPage() {
           <Card>
             <CardContent className="py-6 text-center">
               <Layers className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No templates are compatible with this operating system.</p>
+              <p className="mt-2 text-muted-foreground">No templates are compatible with this OS.</p>
             </CardContent>
           </Card>
         )}
       </DetailSection>
 
-      <EditOsModal />
-      <DeleteOsModal />
+      <EditOsModal onUpdated={fetchOperatingSystem} />
+      <DeleteOsModal onDeleted={handleDeleted} />
     </div>
   )
 }

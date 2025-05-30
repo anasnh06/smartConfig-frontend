@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { MoreHorizontal, Tag, Server } from "lucide-react"
-
+import { Tag, Server, LayoutTemplate, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Role } from "@/types/entities"
@@ -15,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getServersByRoleId } from "@/lib/mock-data"
 
 interface RoleCardProps {
   role: Role
@@ -23,14 +21,14 @@ interface RoleCardProps {
 
 export function RoleCard({ role }: RoleCardProps) {
   const store = useStore()
-  const associatedServers = getServersByRoleId(role.id)
-  const serverCount = associatedServers.length
+  const serverCount = role.servers?.length ?? 0
+  const templateCount = role.templates?.length ?? 0
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 leading-normal">
             <Tag className="h-4 w-4 text-muted-foreground" />
             <span className="line-clamp-1">{role.name}</span>
           </CardTitle>
@@ -53,15 +51,25 @@ export function RoleCard({ role }: RoleCardProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-      <CardContent className="flex-1">
+
+      <CardContent className="flex-1 leading-normal">
         <p className="text-sm text-muted-foreground line-clamp-2">{role.description}</p>
-        <div className="mt-2 flex items-center gap-1">
-          <Server className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">
-            {serverCount} server{serverCount !== 1 ? "s" : ""}
-          </span>
+        <div className="mt-2 flex flex-col gap-1">
+          <div className="flex items-center gap-1">
+            <Server className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {serverCount} server{serverCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {templateCount} template{templateCount !== 1 ? "s" : ""}
+            </span>
+          </div>
         </div>
       </CardContent>
+
       <CardFooter>
         <Button variant="outline" className="w-full" asChild>
           <Link href={`/roles/${role.id}`}>View Details</Link>

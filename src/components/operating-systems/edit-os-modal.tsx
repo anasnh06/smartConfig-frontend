@@ -13,23 +13,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useOperatingSystemsStore } from "@/lib/store/operating-systems"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  version: z.string().min(1, "Version is required"),
-  architecture: z.string().min(1, "Architecture is required"),
+  version: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditOsModal() {
+interface EditOsModalProps {
+  onUpdated?: () => void
+}
+
+export function EditOsModal({ onUpdated }: EditOsModalProps) {
   const { isEditOsModalOpen, closeEditOsModal, selectedOs } = useStore()
+  const updateOperatingSystem = useOperatingSystemsStore((state) => state.updateOperatingSystem)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -38,35 +49,39 @@ export function EditOsModal() {
     defaultValues: {
       name: "",
       version: "",
-      architecture: "",
     },
   })
 
   useEffect(() => {
     if (selectedOs) {
       form.reset({
-        name: selectedOs.name,
-        version: selectedOs.version,
-        architecture: selectedOs.architecture,
+        name: selectedOs.name || "",
+        version: selectedOs.version || "",
       })
     }
   }, [selectedOs, form])
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedOs) return
-
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeEditOsModal()
-
-    toast({
-      title: "Operating System updated",
-      description: `${values.name} ${values.version} has been updated successfully.`,
-    })
+    try {
+      await updateOperatingSystem(selectedOs.id, values)
+      toast({
+        title: "Operating System updated",
+        description: `${values.name} ${values.version ?? ""} has been updated successfully.`,
+      })
+      closeEditOsModal()
+      onUpdated?.()
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update operating system",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -100,29 +115,6 @@ export function EditOsModal() {
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="architecture"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Architecture</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an architecture" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="x86_64">x86_64</SelectItem>
-                      <SelectItem value="aarch64">aarch64</SelectItem>
-                      <SelectItem value="armv7">armv7</SelectItem>
-                      <SelectItem value="i386">i386</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

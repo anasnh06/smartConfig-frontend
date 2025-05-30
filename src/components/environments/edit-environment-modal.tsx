@@ -18,17 +18,21 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Textarea } from "@/components/ui/textarea"
+import { useEnvironmentsStore } from "@/lib/store/environments"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditEnvironmentModal() {
+type EditEnvironmentModalProps = {
+  onUpdated?: () => void
+}
+
+export function EditEnvironmentModal({ onUpdated }: EditEnvironmentModalProps) {
   const { isEditEnvironmentModalOpen, closeEditEnvironmentModal, selectedEnvironment } = useStore()
+  const updateEnvironment = useEnvironmentsStore((state) => state.updateEnvironment)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -36,34 +40,37 @@ export function EditEnvironmentModal() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      description: "",
     },
   })
 
   useEffect(() => {
     if (selectedEnvironment) {
-      form.reset({
-        name: selectedEnvironment.name,
-        description: selectedEnvironment.description,
-      })
+      form.reset({ name: selectedEnvironment.name })
     }
   }, [selectedEnvironment, form])
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedEnvironment) return
-
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeEditEnvironmentModal()
-
-    toast({
-      title: "Environment updated",
-      description: `${values.name} has been updated successfully.`,
-    })
+    try {
+      await updateEnvironment(selectedEnvironment.id, values)
+      toast({
+        title: "Environment updated",
+        description: `${values.name} has been updated successfully.`,
+      })
+      closeEditEnvironmentModal()
+      form.reset()
+      onUpdated?.()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update the environment. Please try again.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -83,19 +90,6 @@ export function EditEnvironmentModal() {
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea className="min-h-[100px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

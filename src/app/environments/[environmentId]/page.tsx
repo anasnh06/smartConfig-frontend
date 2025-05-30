@@ -1,27 +1,69 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Edit, Trash, Server, Briefcase } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { ArrowLeft, Edit, Trash, Server } from "lucide-react"
+import { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { DetailSection } from "@/components/ui/detail-section"
-import { getEnvironmentById, getServersByEnvironmentId, projects } from "@/lib/mock-data"
+import { DataTable } from "@/components/ui/data-table"
+import { Card, CardContent } from "@/components/ui/card"
 import { useStore } from "@/lib/store"
+import { getEnvironment } from "@/lib/api/environment"
+import type { Environment, ServerShort } from "@/types/entities"
 import { EditEnvironmentModal } from "@/components/environments/edit-environment-modal"
 import { DeleteEnvironmentModal } from "@/components/environments/delete-environment-modal"
-import { DataTable } from "@/components/ui/data-table"
-import { columns as serverColumns } from "../../servers/columns"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Project } from "@/types/entities"
 
 export default function EnvironmentDetailPage() {
   const params = useParams()
-  const environmentId = params.environmentId as string
-  const environment = getEnvironmentById(environmentId)
+  const router = useRouter()
+  const environmentId = Number(params.environmentId)
   const store = useStore()
+
+  const [environment, setEnvironment] = useState<Environment | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchEnvironment = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getEnvironment(environmentId)
+      setEnvironment(data)
+    } catch (error) {
+      console.error("Failed to fetch environment", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleted = () => {
+    router.push("/environments")
+  }
+
+  useEffect(() => {
+    fetchEnvironment()
+  }, [environmentId])
+
+  const serverColumns: ColumnDef<ServerShort>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <Link href={`/servers/${row.original.id}`} className="font-medium hover:underline">
+          {row.getValue("name")}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "ip_address",
+      header: "IP Address",
+      cell: ({ row }) => row.getValue("ip_address"),
+    },
+  ]
+
+  if (isLoading) return <p className="text-center">Loading...</p>
 
   if (!environment) {
     return (
@@ -37,53 +79,6 @@ export default function EnvironmentDetailPage() {
     )
   }
 
-  // Get associated servers
-  const servers = getServersByEnvironmentId(environmentId)
-
-  // Get associated projects
-  const associatedProjects = projects.filter((project) => project.environmentIds.includes(environmentId))
-
-  // Define columns for the projects table
-  const projectColumns: ColumnDef<Project>[] = [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => {
-        return (
-          <Link href={`/projects/${row.original.id}`} className="font-medium hover:underline">
-            {row.getValue("name")}
-          </Link>
-        )
-      },
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string
-        return <span className="line-clamp-1">{description}</span>
-      },
-    },
-    {
-      accessorKey: "environmentIds",
-      header: "Environments",
-      cell: ({ row }) => {
-        const envIds = row.getValue("environmentIds") as string[]
-        return envIds.length
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/projects/${row.original.id}`}>View</Link>
-          </Button>
-        )
-      },
-    },
-  ]
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -92,17 +87,17 @@ export default function EnvironmentDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader title={environment.name} description={environment.description} />
+        <PageHeader title={environment.name} />
       </div>
 
       <div className="flex gap-4">
-        <Button variant="outline" className="gap-2" onClick={() => store.openEditEnvironmentModal(environment)}>
+        <Button variant="outline" onClick={() => store.openEditEnvironmentModal(environment)}>
           <Edit className="h-4 w-4" />
           Edit
         </Button>
         <Button
           variant="outline"
-          className="gap-2 text-destructive"
+          className="text-destructive"
           onClick={() => store.openDeleteEnvironmentModal(environment)}
         >
           <Trash className="h-4 w-4" />
@@ -110,84 +105,40 @@ export default function EnvironmentDetailPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Environment Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-1 gap-4">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Name</dt>
-                <dd className="text-sm">{environment.name}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Description</dt>
-                <dd className="text-sm">{environment.description}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                <dd className="text-sm">{new Date(environment.createdAt).toLocaleDateString()}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated</dt>
-                <dd className="text-sm">{new Date(environment.updatedAt).toLocaleDateString()}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Usage Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Server className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-sm font-medium">Servers</span>
-                </div>
-                <span className="text-2xl font-bold">{servers.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-sm font-medium">Projects</span>
-                </div>
-                <span className="text-2xl font-bold">{associatedProjects.length}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <DetailSection title="Servers in this Environment">
-        {servers.length > 0 ? (
-          <DataTable columns={serverColumns} data={servers} searchColumn="name" searchPlaceholder="Search servers..." />
-        ) : (
-          <Card>
-            <CardContent className="py-6 text-center">
-              <Server className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No servers are using this environment.</p>
-            </CardContent>
-          </Card>
-        )}
+      <DetailSection title="Environment Metadata">
+        <dl className="grid gap-4">
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+            <dd className="text-sm">{environment.created_at ? new Date(environment.created_at).toLocaleString() : "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
+            <dd className="text-sm">{environment.created_by_user?.username || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
+            <dd className="text-sm">{environment.updated_at ? new Date(environment.updated_at).toLocaleString() : "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Updated By</dt>
+            <dd className="text-sm">{environment.updated_by_user?.username || "—"}</dd>
+          </div>
+        </dl>
       </DetailSection>
 
-      <DetailSection title="Projects using this Environment">
-        {associatedProjects.length > 0 ? (
+      <DetailSection title="Servers in this Environment">
+        {environment.servers?.length ? (
           <DataTable
-            columns={projectColumns}
-            data={associatedProjects}
+            columns={serverColumns}
+            data={environment.servers}
             searchColumn="name"
-            searchPlaceholder="Search projects..."
+            searchPlaceholder="Search servers..."
           />
         ) : (
           <Card>
             <CardContent className="py-6 text-center">
-              <Briefcase className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No projects are using this environment.</p>
+              <Server className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="mt-2 text-muted-foreground">No servers are assigned to this environment.</p>
             </CardContent>
           </Card>
         )}

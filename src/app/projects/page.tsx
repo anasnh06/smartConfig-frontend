@@ -1,39 +1,52 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { Briefcase, Plus } from "lucide-react"
 
-import { projects } from "@/lib/mock-data"
-import { Button } from "@/components/ui/button"
-import { CardGrid } from "@/components/ui/card-grid"
+import { useStore } from "@/lib/store"
+import { useProjectsStore } from "@/lib/store/projects"
 import { PageHeader } from "@/components/ui/page-header"
+import { CardGrid } from "@/components/ui/card-grid"
 import { ProjectCard } from "@/components/projects/project-card"
 import { CreateProjectModal } from "@/components/projects/create-project-modal"
+import { EditProjectModal } from "@/components/projects/edit-project-modal"
+import { DeleteProjectModal } from "@/components/projects/delete-project-modal"
 
 export default function ProjectsPage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const store = useStore()
+  const projects = useProjectsStore((state) => state.projects)
+  const fetchProjects = useProjectsStore((state) => state.fetchProjects)
+  const loading = useProjectsStore((state) => state.loading)
+
+  useEffect(() => {
+    fetchProjects()
+  }, [fetchProjects])
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="space-y-6 p-6">
       <PageHeader
         title="Projects"
         description="Manage your infrastructure projects"
         icon={<Briefcase className="h-6 w-6" />}
-        actions={
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Project
-          </Button>
-        }
+        action={{
+          label: "Add Project",
+          onClick: store.openCreateProjectModal,
+        }}
       />
 
-      <CardGrid>
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </CardGrid>
+      {loading ? (
+        <p className="text-muted-foreground text-center">Loading projects...</p>
+      ) : (
+        <CardGrid>
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </CardGrid>
+      )}
 
-      <CreateProjectModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+      <CreateProjectModal />
+      <EditProjectModal />
+      <DeleteProjectModal />
     </div>
   )
 }

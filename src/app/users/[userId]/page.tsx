@@ -1,6 +1,7 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Edit, Trash } from "lucide-react"
 
@@ -8,19 +9,42 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { DetailSection } from "@/components/ui/detail-section"
-import { getUserById, getServersByUserId } from "@/lib/mock-data"
-import { useStore } from "@/lib/store"
 import { EditUserModal } from "@/components/users/edit-user-modal"
 import { DeleteUserModal } from "@/components/users/delete-user-modal"
-import { DataTable } from "@/components/ui/data-table"
-import { columns as serverColumns } from "../../servers/columns"
+import { getUser } from "@/lib/api/user"
+import { useStore } from "@/lib/store"
+import type { User } from "@/types/entities"
 
 export default function UserDetailPage() {
   const params = useParams()
-  const userId = params.userId as string
-  const user = getUserById(userId)
-  const servers = getServersByUserId(userId)
+  const router = useRouter()
+  const userId = Number(params.userId)
   const store = useStore()
+
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchUser = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getUser(userId)
+      setUser(data)
+    } catch (error) {
+      console.error("Failed to fetch user", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleted = () => {
+    router.push("/users")
+  }
+
+  useEffect(() => {
+    fetchUser()
+  }, [userId])
+
+  if (isLoading) return <p className="text-center">Loading...</p>
 
   if (!user) {
     return (
@@ -44,7 +68,7 @@ export default function UserDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader title={user.name} description={`User details for ${user.email}`} />
+        <PageHeader title={user.username} description={`User details for ${user.email}`} />
       </div>
 
       <div className="flex gap-4">
@@ -52,7 +76,11 @@ export default function UserDetailPage() {
           <Edit className="h-4 w-4" />
           Edit
         </Button>
-        <Button variant="outline" className="gap-2 text-destructive" onClick={() => store.openDeleteUserModal(user)}>
+        <Button
+          variant="outline"
+          className="gap-2 text-destructive"
+          onClick={() => store.openDeleteUserModal(user)}
+        >
           <Trash className="h-4 w-4" />
           Delete
         </Button>
@@ -66,40 +94,44 @@ export default function UserDetailPage() {
           <CardContent>
             <dl className="grid grid-cols-2 gap-4">
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Name</dt>
-                <dd className="text-sm">{user.name}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Username</dt>
+                <dd className="text-sm">{user.username}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Email</dt>
                 <dd className="text-sm">{user.email}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Role</dt>
-                <dd className="text-sm">{user.role}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Active</dt>
+                <dd className="text-sm">{user.is_active ? "Yes" : "No"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                <dd className="text-sm">{new Date(user.createdAt).toLocaleDateString()}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+                <dd className="text-sm">
+                  {user.created_at ? new Date(user.created_at).toLocaleString() : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
+                <dd className="text-sm">
+                  {user.updated_at ? new Date(user.updated_at).toLocaleString() : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
+                <dd className="text-sm">{user.creator?.username || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Updated By</dt>
+                <dd className="text-sm">{user.updater?.username || "—"}</dd>
               </div>
             </dl>
           </CardContent>
         </Card>
       </div>
 
-      <DetailSection title="Associated Servers">
-        {servers.length > 0 ? (
-          <DataTable columns={serverColumns} data={servers} />
-        ) : (
-          <Card>
-            <CardContent className="py-6 text-center">
-              <p className="text-muted-foreground">No servers associated with this user.</p>
-            </CardContent>
-          </Card>
-        )}
-      </DetailSection>
-
-      <EditUserModal />
-      <DeleteUserModal />
+      <EditUserModal onUpdated={fetchUser} />
+      <DeleteUserModal onDeleted={handleDeleted} />
     </div>
   )
 }

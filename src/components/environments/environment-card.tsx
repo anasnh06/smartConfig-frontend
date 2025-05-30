@@ -1,12 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { MoreHorizontal, Globe, Server } from "lucide-react"
+import { Globe, MoreHorizontal, Server, Pencil, Trash, Eye } from "lucide-react"
 
+import type { Environment } from "@/types/entities"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Environment } from "@/types/entities"
-import { useStore } from "@/lib/store"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getServersByEnvironmentId } from "@/lib/mock-data"
+import { useStore } from "@/lib/store"
 
 interface EnvironmentCardProps {
   environment: Environment
@@ -23,14 +22,13 @@ interface EnvironmentCardProps {
 
 export function EnvironmentCard({ environment }: EnvironmentCardProps) {
   const store = useStore()
-  const associatedServers = getServersByEnvironmentId(environment.id)
-  const serverCount = associatedServers.length
+  const serverCount = environment.servers?.length ?? 0
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 leading-normal">
             <Globe className="h-4 w-4 text-muted-foreground" />
             <span className="line-clamp-1">{environment.name}</span>
           </CardTitle>
@@ -45,16 +43,25 @@ export function EnvironmentCard({ environment }: EnvironmentCardProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href={`/environments/${environment.id}`}>View details</Link>
+              <Link href={`/environments/${environment.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                View details
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => store.openEditEnvironmentModal(environment)}>Edit</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => store.openDeleteEnvironmentModal(environment)}>Delete</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => store.openEditEnvironmentModal(environment)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => store.openDeleteEnvironmentModal(environment)}>
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-      <CardContent className="flex-1">
-        <p className="text-sm text-muted-foreground line-clamp-2">{environment.description}</p>
+
+      <CardContent className="flex-1 leading-normal">
         <div className="mt-2 flex items-center gap-1">
           <Server className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
@@ -62,6 +69,7 @@ export function EnvironmentCard({ environment }: EnvironmentCardProps) {
           </span>
         </div>
       </CardContent>
+
       <CardFooter>
         <Button variant="outline" className="w-full" asChild>
           <Link href={`/environments/${environment.id}`}>View Details</Link>

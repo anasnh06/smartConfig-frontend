@@ -1,13 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Briefcase, Check, ChevronsUpDown } from "lucide-react"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
-import type { Project } from "@/types/entities"
-import { environments } from "@/lib/mock-data"
-import { Button } from "@/components/ui/button"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import {
   Dialog,
   DialogContent,
@@ -16,83 +13,78 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
+import { useProjectsStore } from "@/lib/store/projects"
 
 const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Project name must be at least 2 characters.",
-  }),
-  description: z.string().min(5, {
-    message: "Description must be at least 5 characters.",
-  }),
-  environmentIds: z.array(z.string()).min(1, {
-    message: "Select at least one environment.",
-  }),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  description: z.string().min(5, "Description must be at least 5 characters"),
 })
 
-interface EditProjectModalProps {
-  project: Project
-  open: boolean
-  onOpenChange: (open: boolean) => void
+type FormValues = z.infer<typeof formSchema>
+
+type EditProjectModalProps = {
+  onUpdated?: () => void
 }
 
-export function EditProjectModal({ project, open, onOpenChange }: EditProjectModalProps) {
-  const router = useRouter()
+export function EditProjectModal({ onUpdated }: EditProjectModalProps) {
+  const { isEditProjectModalOpen, closeEditProjectModal, selectedProject } = useStore()
+  const updateProject = useProjectsStore((state) => state.updateProject)
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const [environmentsOpen, setEnvironmentsOpen] = useState(false)
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: project.name,
-      description: project.description,
-      environmentIds: project.environmentIds,
+      name: "",
+      description: "",
     },
   })
 
-  // Update form when project changes
   useEffect(() => {
-    form.reset({
-      name: project.name,
-      description: project.description,
-      environmentIds: project.environmentIds,
-    })
-  }, [project, form])
+    if (selectedProject) {
+      form.reset({
+        name: selectedProject.name,
+        description: selectedProject.description || "",
+      })
+    }
+  }, [selectedProject, form])
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, this would call an API to update the project
-    console.log(values)
+  const onSubmit = async (values: FormValues) => {
+    if (!selectedProject) return
+    setIsLoading(true)
 
-    toast({
-      title: "Project updated",
-      description: `Project "${values.name}" has been updated successfully.`,
-    })
-
-    onOpenChange(false)
-
-    // In a real app, we would navigate to the updated project
-    // For now, just refresh the page
-    router.refresh()
+    try {
+      await updateProject(selectedProject.id, values)
+      toast({
+        title: "Project updated",
+        description: `${values.name} has been updated successfully.`,
+      })
+      closeEditProjectModal()
+      form.reset()
+      onUpdated?.()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update the project. Please try again.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[525px]">
+    <Dialog open={isEditProjectModalOpen} onOpenChange={closeEditProjectModal}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5" />
-            <span>Edit Project</span>
-          </DialogTitle>
-          <DialogDescription>Update the details of your project.</DialogDescription>
+          <DialogTitle>Edit Project</DialogTitle>
+          <DialogDescription>Update project information.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -105,7 +97,6 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
-                  <FormDescription>The name of your project.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -117,84 +108,19 @@ export function EditProjectModal({ project, open, onOpenChange }: EditProjectMod
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea className="min-h-[100px]" {...field} />
                   </FormControl>
-                  <FormDescription>A short description of what this project is for.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="environmentIds"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Environments</FormLabel>
-                  <Popover open={environmentsOpen} onOpenChange={setEnvironmentsOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={environmentsOpen}
-                          className={cn("justify-between", !field.value.length && "text-muted-foreground")}
-                        >
-                          {field.value.length
-                            ? `${field.value.length} environment${field.value.length > 1 ? "s" : ""} selected`
-                            : "Select environments"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0">
-                      <Command>
-                        <CommandInput placeholder="Search environments..." />
-                        <CommandList>
-                          <CommandEmpty>No environments found.</CommandEmpty>
-                          <CommandGroup>
-                            {environments.map((environment) => (
-                              <CommandItem
-                                key={environment.id}
-                                value={environment.id}
-                                onSelect={() => {
-                                  const updatedValues = field.value.includes(environment.id)
-                                    ? field.value.filter((id) => id !== environment.id)
-                                    : [...field.value, environment.id]
-
-                                  form.setValue("environmentIds", updatedValues)
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    field.value.includes(environment.id) ? "opacity-100" : "opacity-0",
-                                  )}
-                                />
-                                {environment.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {field.value.map((id) => {
-                      const env = environments.find((e) => e.id === id)
-                      return env ? (
-                        <Badge key={id} variant="secondary" className="text-xs">
-                          {env.name}
-                        </Badge>
-                      ) : null
-                    })}
-                  </div>
-                  <FormDescription>The environments this project will be deployed to.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Changes</Button>
+              <Button type="button" variant="outline" onClick={closeEditProjectModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

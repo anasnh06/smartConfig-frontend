@@ -18,18 +18,18 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useOperatingSystemsStore } from "@/lib/store/operating-systems"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  version: z.string().min(1, "Version is required"),
-  architecture: z.string().min(1, "Architecture is required"),
+  version: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
 export function CreateOsModal() {
   const { isCreateOsModalOpen, closeCreateOsModal } = useStore()
+  const addOperatingSystem = useOperatingSystemsStore((state) => state.addOperatingSystem)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -38,24 +38,28 @@ export function CreateOsModal() {
     defaultValues: {
       name: "",
       version: "",
-      architecture: "",
     },
   })
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeCreateOsModal()
-    form.reset()
-
-    toast({
-      title: "Operating System created",
-      description: `${values.name} ${values.version} has been created successfully.`,
-    })
+    try {
+      await addOperatingSystem(values)
+      toast({
+        title: "Operating System created",
+        description: `${values.name} ${values.version ?? ""} has been added successfully.`,
+      })
+      closeCreateOsModal()
+      form.reset()
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create operating system",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -63,7 +67,7 @@ export function CreateOsModal() {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Create Operating System</DialogTitle>
-          <DialogDescription>Add a new operating system to your infrastructure.</DialogDescription>
+          <DialogDescription>Add a new OS to your infrastructure.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -89,29 +93,6 @@ export function CreateOsModal() {
                   <FormControl>
                     <Input placeholder="22.04 LTS" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="architecture"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Architecture</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an architecture" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="x86_64">x86_64</SelectItem>
-                      <SelectItem value="aarch64">aarch64</SelectItem>
-                      <SelectItem value="armv7">armv7</SelectItem>
-                      <SelectItem value="i386">i386</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

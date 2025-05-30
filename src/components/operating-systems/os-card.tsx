@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { MoreHorizontal, Monitor, Server } from "lucide-react"
+import { MoreHorizontal, Monitor, Server, Pencil, Trash, Eye } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import type { OperatingSystem } from "@/types/entities"
 import { useStore } from "@/lib/store"
 import {
@@ -15,8 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getServersByOperatingSystemId } from "@/lib/mock-data"
-import { Badge } from "@/components/ui/badge"
 
 interface OsCardProps {
   os: OperatingSystem
@@ -24,21 +23,17 @@ interface OsCardProps {
 
 export function OsCard({ os }: OsCardProps) {
   const store = useStore()
-  const associatedServers = getServersByOperatingSystemId(os.id)
-  const serverCount = associatedServers.length
+  const serverCount = os.servers?.length ?? 0
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 leading-normal">
             <Monitor className="h-4 w-4 text-muted-foreground" />
-            <span className="line-clamp-1">{os.name}</span>
+            <span className="line-clamp-1 leading-normal">{os.name}</span>
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline">{os.version}</Badge>
-            <Badge variant="outline">{os.architecture}</Badge>
-          </div>
+          {os.version && <Badge variant="outline">{os.version}</Badge>}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -50,14 +45,24 @@ export function OsCard({ os }: OsCardProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href={`/operating-systems/${os.id}`}>View details</Link>
+              <Link href={`/operating-systems/${os.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                View details
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => store.openEditOsModal(os)}>Edit</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => store.openDeleteOsModal(os)}>Delete</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => store.openEditOsModal(os)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => store.openDeleteOsModal(os)}>
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
+
       <CardContent className="flex-1">
         <div className="mt-2 flex items-center gap-1">
           <Server className="h-4 w-4 text-muted-foreground" />
@@ -66,6 +71,7 @@ export function OsCard({ os }: OsCardProps) {
           </span>
         </div>
       </CardContent>
+
       <CardFooter>
         <Button variant="outline" className="w-full" asChild>
           <Link href={`/operating-systems/${os.id}`}>View Details</Link>

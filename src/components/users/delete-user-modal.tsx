@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,9 +13,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
+import { useUsersStore } from "@/lib/store/users"
 
-export function DeleteUserModal() {
+type DeleteUserModalProps = {
+  onDeleted?: () => void
+}
+
+export function DeleteUserModal({ onDeleted }: DeleteUserModalProps) {
   const { isDeleteUserModalOpen, closeDeleteUserModal, selectedUser } = useStore()
+  const removeUser = useUsersStore((state) => state.removeUser)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -25,26 +30,33 @@ export function DeleteUserModal() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeDeleteUserModal()
-
-    toast({
-      title: "User deleted",
-      description: `${selectedUser.name} has been deleted successfully.`,
-    })
+    try {
+      await removeUser(selectedUser.id)
+      toast({
+        title: "User deleted",
+        description: `${selectedUser.username} has been deleted successfully.`,
+      })
+      closeDeleteUserModal()
+      onDeleted?.()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <AlertDialog open={isDeleteUserModalOpen} onOpenChange={closeDeleteUserModal}>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-[500px]">
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the user
-            {selectedUser ? ` "${selectedUser.name}"` : ""} and remove their data from the system.
+            {selectedUser ? ` "${selectedUser.username}"` : ""} and remove their data from the system.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -11,3 +11,9 @@ export type Server = {
   createdAt: string
   updatedAt: string
 }
+
+export type ServerShort = {
+  id: number
+  name: string
+  ip_address: string
+}

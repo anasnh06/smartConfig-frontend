@@ -1,27 +1,78 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Edit, Trash, Server, Layers } from "lucide-react"
+import { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { DetailSection } from "@/components/ui/detail-section"
-import { getRoleById, getServersByRoleId, getTemplatesByRoleId } from "@/lib/mock-data"
+import { DataTable } from "@/components/ui/data-table"
 import { useStore } from "@/lib/store"
+import { getRole } from "@/lib/api/role"
 import { EditRoleModal } from "@/components/roles/edit-role-modal"
 import { DeleteRoleModal } from "@/components/roles/delete-role-modal"
-import { DataTable } from "@/components/ui/data-table"
-import { columns as serverColumns } from "../../servers/columns"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Template } from "@/types/entities"
+import type { Role, ServerShort, TemplateShort } from "@/types/entities"
 
 export default function RoleDetailPage() {
   const params = useParams()
-  const roleId = params.roleId as string
-  const role = getRoleById(roleId)
+  const router = useRouter()
+  const roleId = Number(params.roleId)
   const store = useStore()
+
+  const [role, setRole] = useState<Role | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchRole = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getRole(roleId)
+      setRole(data)
+    } catch (error) {
+      console.error("Failed to fetch role", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleted = () => {
+    router.push("/roles")
+  }
+
+  useEffect(() => {
+    fetchRole()
+  }, [roleId])
+
+  // ... Columns identiques
+  const serverColumns: ColumnDef<ServerShort>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+    },
+    {
+      accessorKey: "ip_address",
+      header: "IP Address",
+      cell: ({ row }) => row.getValue("ip_address"),
+    },
+  ]
+
+  const templateColumns: ColumnDef<TemplateShort>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <Link href={`/templates/${row.original.id}`} className="font-medium hover:underline">
+          {row.getValue("name")}
+        </Link>
+      ),
+    },
+  ]
+
+  if (isLoading) return <p className="text-center">Loading...</p>
 
   if (!role) {
     return (
@@ -37,51 +88,6 @@ export default function RoleDetailPage() {
     )
   }
 
-  // Get associated servers and templates
-  const servers = getServersByRoleId(roleId)
-  const templates = getTemplatesByRoleId(roleId)
-
-  // Define columns for the templates table
-  const templateColumns: ColumnDef<Template>[] = [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => {
-        return (
-          <Link href={`/templates/${row.original.id}`} className="font-medium hover:underline">
-            {row.getValue("name")}
-          </Link>
-        )
-      },
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string
-        return <span className="line-clamp-1">{description}</span>
-      },
-    },
-    {
-      accessorKey: "configurationIds",
-      header: "Configurations",
-      cell: ({ row }) => {
-        const configIds = row.getValue("configurationIds") as string[]
-        return configIds.length
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/templates/${row.original.id}`}>View</Link>
-          </Button>
-        )
-      },
-    },
-  ]
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -90,47 +96,61 @@ export default function RoleDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader title={role.name} description={role.description} />
+        <PageHeader title={role.name} description={role.description || ""} />
       </div>
 
       <div className="flex gap-4">
-        <Button variant="outline" className="gap-2" onClick={() => store.openEditRoleModal(role)}>
+        <Button variant="outline" onClick={() => store.openEditRoleModal(role)}>
           <Edit className="h-4 w-4" />
           Edit
         </Button>
-        <Button variant="outline" className="gap-2 text-destructive" onClick={() => store.openDeleteRoleModal(role)}>
+        <Button
+          variant="outline"
+          className="text-destructive"
+          onClick={() => store.openDeleteRoleModal(role)}
+        >
           <Trash className="h-4 w-4" />
           Delete
         </Button>
       </div>
 
+      {/* Informations du rôle */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Role Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-1 gap-4">
+            <dl className="grid gap-4">
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Name</dt>
                 <dd className="text-sm">{role.name}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Description</dt>
-                <dd className="text-sm">{role.description}</dd>
+                <dd className="text-sm">{role.description || "—"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                <dd className="text-sm">{new Date(role.createdAt).toLocaleDateString()}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+                <dd className="text-sm">{role.created_at ? new Date(role.created_at).toLocaleString() : "—"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated</dt>
-                <dd className="text-sm">{new Date(role.updatedAt).toLocaleDateString()}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
+                <dd className="text-sm">{role.created_by_user?.username || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
+                <dd className="text-sm">{role.updated_at ? new Date(role.updated_at).toLocaleString() : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Updated By</dt>
+                <dd className="text-sm">{role.updated_by_user?.username || "—"}</dd>
               </div>
             </dl>
           </CardContent>
         </Card>
 
+        {/* Statistiques */}
         <Card>
           <CardHeader>
             <CardTitle>Usage Statistics</CardTitle>
@@ -142,23 +162,24 @@ export default function RoleDetailPage() {
                   <Server className="h-5 w-5 text-muted-foreground" />
                   <span className="text-sm font-medium">Servers</span>
                 </div>
-                <span className="text-2xl font-bold">{servers.length}</span>
+                <span className="text-2xl font-bold">{role.servers?.length || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Layers className="h-5 w-5 text-muted-foreground" />
                   <span className="text-sm font-medium">Templates</span>
                 </div>
-                <span className="text-2xl font-bold">{templates.length}</span>
+                <span className="text-2xl font-bold">{role.templates?.length || 0}</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Sections */}
       <DetailSection title="Servers with this Role">
-        {servers.length > 0 ? (
-          <DataTable columns={serverColumns} data={servers} searchColumn="name" searchPlaceholder="Search servers..." />
+        {role.servers?.length ? (
+          <DataTable columns={serverColumns} data={role.servers} searchColumn="name" searchPlaceholder="Search servers..." />
         ) : (
           <Card>
             <CardContent className="py-6 text-center">
@@ -170,13 +191,8 @@ export default function RoleDetailPage() {
       </DetailSection>
 
       <DetailSection title="Compatible Templates">
-        {templates.length > 0 ? (
-          <DataTable
-            columns={templateColumns}
-            data={templates}
-            searchColumn="name"
-            searchPlaceholder="Search templates..."
-          />
+        {role.templates?.length ? (
+          <DataTable columns={templateColumns} data={role.templates} searchColumn="name" searchPlaceholder="Search templates..." />
         ) : (
           <Card>
             <CardContent className="py-6 text-center">
@@ -187,8 +203,9 @@ export default function RoleDetailPage() {
         )}
       </DetailSection>
 
-      <EditRoleModal />
-      <DeleteRoleModal />
+      {/* ✅ Modales avec actions */}
+      <EditRoleModal onUpdated={fetchRole} />
+      <DeleteRoleModal onDeleted={handleDeleted} />
     </div>
   )
 }

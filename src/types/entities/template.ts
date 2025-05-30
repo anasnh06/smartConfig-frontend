@@ -8,3 +8,9 @@ export type Template = {
   createdAt: string
   updatedAt: string
 }
+
+
+export type TemplateShort = {
+  id: number
+  name: string
+}

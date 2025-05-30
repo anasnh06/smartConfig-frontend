@@ -18,63 +18,69 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useUsersStore } from "@/lib/store/users"
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
-  role: z.string().min(1, "Role is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
 export function CreateUserModal() {
   const { isCreateUserModalOpen, closeCreateUserModal } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
+  const addUser = useUsersStore((state) => state.addUser)
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      username: "",
       email: "",
-      role: "",
+      password: "",
     },
   })
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeCreateUserModal()
-    form.reset()
-
-    toast({
-      title: "User created",
-      description: `${values.name} has been created successfully.`,
-    })
+    try {
+      await addUser({ ...values, is_active: true }) // Ajoute is_active manuellement ici si nécessaire
+      toast({
+        title: "User created",
+        description: `${values.username} has been created successfully.`,
+      })
+      form.reset()
+      closeCreateUserModal()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <Dialog open={isCreateUserModalOpen} onOpenChange={closeCreateUserModal}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Create User</DialogTitle>
-          <DialogDescription>Add a new user to the platform.</DialogDescription>
+          <DialogDescription>Add a new user to your platform.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="john_doe" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -87,7 +93,7 @@ export function CreateUserModal() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="john.doe@example.com" {...field} />
+                    <Input placeholder="john@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -95,22 +101,13 @@ export function CreateUserModal() {
             />
             <FormField
               control={form.control}
-              name="role"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="DevOps">DevOps</SelectItem>
-                      <SelectItem value="Developer">Developer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

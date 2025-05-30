@@ -13,65 +13,96 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useUsersStore } from "@/lib/store/users"
+import { Switch } from "@/components/ui/switch"
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  username: z.string().min(2, "Username must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  role: z.string().min(1, "Role is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional()
+    .or(z.literal("")), // ← accepte aussi une chaîne vide
+  is_active: z.boolean(),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditUserModal() {
+type EditUserModalProps = {
+  onUpdated?: () => void
+}
+
+export function EditUserModal({ onUpdated }: EditUserModalProps) {
   const { isEditUserModalOpen, closeEditUserModal, selectedUser } = useStore()
+  const updateUser = useUsersStore((state) => state.updateUser)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      username: "",
       email: "",
-      role: "",
+      is_active: true,
     },
   })
 
   useEffect(() => {
     if (selectedUser) {
       form.reset({
-        name: selectedUser.name,
+        username: selectedUser.username,
         email: selectedUser.email,
-        role: selectedUser.role,
+        is_active: selectedUser.is_active ?? true,
+        // 🔥 Pas de `password` ici
       })
     }
   }, [selectedUser, form])
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedUser) return
-
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const dataToSend = { ...values }
+      if (!dataToSend.password) delete dataToSend.password
 
-    setIsLoading(false)
-    closeEditUserModal()
+      await updateUser(selectedUser.id, dataToSend)
 
-    toast({
-      title: "User updated",
-      description: `${values.name} has been updated successfully.`,
-    })
+      toast({
+        title: "User updated",
+        description: `${values.username} has been updated successfully.`,
+      })
+
+      closeEditUserModal()
+      form.reset()
+      onUpdated?.()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update user. Please try again.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <Dialog open={isEditUserModalOpen} onOpenChange={closeEditUserModal}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>Update user information.</DialogDescription>
@@ -80,12 +111,12 @@ export function EditUserModal() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="johndoe" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,7 +129,7 @@ export function EditUserModal() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="john.doe@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,26 +137,36 @@ export function EditUserModal() {
             />
             <FormField
               control={form.control}
-              name="role"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="DevOps">DevOps</SelectItem>
-                      <SelectItem value="Developer">Developer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>New Password</FormLabel>
+                  <FormControl>
+                    <Input placeholder="••••••••" type="password" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="is_active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Active</FormLabel>
+                    <DialogDescription>Is this user active?</DialogDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closeEditUserModal}>
                 Cancel
