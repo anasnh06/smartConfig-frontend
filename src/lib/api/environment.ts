@@ -1,4 +1,4 @@
-import type { Environment } from "@/types/entities"
+import type { Environment, EnvironmentShort } from "@/types/entities"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL as string
 
@@ -9,6 +9,15 @@ export async function getEnvironments(): Promise<Environment[]> {
   if (!res.ok) throw new Error("❌ Failed to fetch environments")
   return res.json()
 }
+
+export async function getEnvironmentShorts(): Promise<EnvironmentShort[]> {
+  const res = await fetch(`${API_URL}/api/v1/environments/short`, {
+    credentials: "include",
+  })
+  if (!res.ok) throw new Error("❌ Failed to fetch environment shorts")
+  return res.json()
+}
+
 
 export async function getEnvironment(id: number): Promise<Environment> {
   const res = await fetch(`${API_URL}/api/v1/environments/${id}`, {
@@ -56,3 +65,4 @@ export async function deleteEnvironment(id: number): Promise<void> {
     throw new Error(error.detail || "❌ Failed to delete environment")
   }
 }
+

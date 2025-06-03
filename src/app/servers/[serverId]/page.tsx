@@ -1,38 +1,84 @@
-"use client"
+"use client";
 
-import { useParams } from "next/navigation"
-import Link from "next/link"
-import { ArrowLeft, Edit, Trash, ServerIcon } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PageHeader } from "@/components/ui/page-header"
-import { DetailSection } from "@/components/ui/detail-section"
-import { StatusBadge } from "@/components/ui/status-badge"
-import {
-  getServerById,
-  getOperatingSystemById,
-  getRoleById,
-  getEnvironmentById,
-  getProjectById,
-  getServerConfigurationsByServerId,
-  getServerTemplatesByServerId,
-  getExecutionsByServerId,
-  getConfigurationById,
-  getTemplateById,
-} from "@/lib/mock-data"
-import { useStore } from "@/lib/store"
-import { EditServerModal } from "@/components/servers/edit-server-modal"
-import { DeleteServerModal } from "@/components/servers/delete-server-modal"
-import { DataTable } from "@/components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { ServerConfiguration, ServerTemplate, Execution } from "@/types/entities"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Edit, Trash, ServerIcon } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { getServer } from "@/lib/api/server";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DetailSection } from "@/components/ui/detail-section";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { DataTable } from "@/components/ui/data-table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { EditServerModal } from "@/components/servers/edit-server-modal";
+import { DeleteServerModal } from "@/components/servers/delete-server-modal";
+import type { Server } from "@/types/entities";
 
 export default function ServerDetailPage() {
-  const params = useParams()
-  const serverId = params.serverId as string
-  const server = getServerById(serverId)
-  const store = useStore()
+  const params = useParams();
+  const router = useRouter();
+  const serverId = Number(params.serverId);
+  const store = useStore();
+
+  const [server, setServer] = useState<Server | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchServer = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getServer(serverId);
+      setServer(data);
+    } catch (error) {
+      console.error("Failed to fetch server", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleted = () => router.push("/servers");
+
+  useEffect(() => {
+    fetchServer();
+  }, [serverId]);
+
+  const configurationColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "configuration.name",
+      header: "Configuration",
+      cell: ({ row }) => (
+        <Link href={`/configurations/${row.original.configuration.id}`} className="font-medium hover:underline">
+          {row.original.configuration.name}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
+    },
+  ];
+
+  const templateColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "template.name",
+      header: "Template",
+      cell: ({ row }) => (
+        <Link href={`/templates/${row.original.template.id}`} className="font-medium hover:underline">
+          {row.original.template.name}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
+    },
+  ];
+
+  if (isLoading) return <p className="text-center">Loading...</p>;
 
   if (!server) {
     return (
@@ -45,122 +91,8 @@ export default function ServerDetailPage() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
-
-  const os = getOperatingSystemById(server.operatingSystemId)
-  const roles = server.roleIds.map((id) => getRoleById(id)).filter(Boolean)
-  const environment = getEnvironmentById(server.environmentId)
-  const project = getProjectById(server.projectId)
-
-  // Get related data
-  const serverConfigurations = getServerConfigurationsByServerId(serverId)
-  const serverTemplates = getServerTemplatesByServerId(serverId)
-  const executions = getExecutionsByServerId(serverId)
-
-  // Define columns for the tables
-  const configurationColumns: ColumnDef<ServerConfiguration>[] = [
-    {
-      accessorKey: "configurationId",
-      header: "Configuration",
-      cell: ({ row }) => {
-        const configId = row.getValue("configurationId") as string
-        const config = getConfigurationById(configId)
-        return config ? (
-          <Link href={`/configurations/${configId}`} className="font-medium hover:underline">
-            {config.name}
-          </Link>
-        ) : (
-          "Unknown"
-        )
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as "pending" | "completed" | "failed"
-        return <StatusBadge status={status} />
-      },
-    },
-    {
-      accessorKey: "executedAt",
-      header: "Executed At",
-      cell: ({ row }) => {
-        return new Date(row.getValue("executedAt") as string).toLocaleString()
-      },
-    },
-  ]
-
-  const templateColumns: ColumnDef<ServerTemplate>[] = [
-    {
-      accessorKey: "templateId",
-      header: "Template",
-      cell: ({ row }) => {
-        const templateId = row.getValue("templateId") as string
-        const template = getTemplateById(templateId)
-        return template ? (
-          <Link href={`/templates/${templateId}`} className="font-medium hover:underline">
-            {template.name}
-          </Link>
-        ) : (
-          "Unknown"
-        )
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as "pending" | "completed" | "failed"
-        return <StatusBadge status={status} />
-      },
-    },
-    {
-      accessorKey: "executedAt",
-      header: "Executed At",
-      cell: ({ row }) => {
-        return new Date(row.getValue("executedAt") as string).toLocaleString()
-      },
-    },
-  ]
-
-  const executionColumns: ColumnDef<Execution>[] = [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => {
-        return (
-          <Link href={`/executions/${row.original.id}`} className="font-medium hover:underline">
-            {row.getValue("name")}
-          </Link>
-        )
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as "pending" | "running" | "completed" | "failed"
-        return <StatusBadge status={status} />
-      },
-    },
-    {
-      accessorKey: "startedAt",
-      header: "Started At",
-      cell: ({ row }) => {
-        return new Date(row.getValue("startedAt") as string).toLocaleString()
-      },
-    },
-    {
-      accessorKey: "completedAt",
-      header: "Completed At",
-      cell: ({ row }) => {
-        const completedAt = row.getValue("completedAt") as string | undefined
-        return completedAt ? new Date(completedAt).toLocaleString() : "N/A"
-      },
-    },
-  ]
 
   return (
     <div className="space-y-6">
@@ -170,7 +102,7 @@ export default function ServerDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader title={server.name} description={`Server details for ${server.hostname}`} />
+        <PageHeader title={server.name} description="Server details" />
       </div>
 
       <div className="flex gap-4">
@@ -178,11 +110,7 @@ export default function ServerDetailPage() {
           <Edit className="h-4 w-4" />
           Edit
         </Button>
-        <Button
-          variant="outline"
-          className="gap-2 text-destructive"
-          onClick={() => store.openDeleteServerModal(server)}
-        >
+        <Button variant="outline" className="gap-2 text-destructive" onClick={() => store.openDeleteServerModal(server)}>
           <Trash className="h-4 w-4" />
           Delete
         </Button>
@@ -194,32 +122,42 @@ export default function ServerDetailPage() {
             <CardTitle>Server Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-2 gap-4">
+            <dl className="grid gap-4">
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Name</dt>
                 <dd className="text-sm">{server.name}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Hostname</dt>
-                <dd className="text-sm">{server.hostname}</dd>
-              </div>
-              <div>
                 <dt className="text-sm font-medium text-muted-foreground">IP Address</dt>
-                <dd className="text-sm">{server.ipAddress}</dd>
+                <dd className="text-sm">{server.ip_address}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Status</dt>
-                <dd className="text-sm">
-                  <StatusBadge status={server.status} />
-                </dd>
+                <dt className="text-sm font-medium text-muted-foreground">SSH Port</dt>
+                <dd className="text-sm">{server.ssh_port}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                <dd className="text-sm">{new Date(server.createdAt).toLocaleDateString()}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">SSH User</dt>
+                <dd className="text-sm">{server.ssh_user}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated</dt>
-                <dd className="text-sm">{new Date(server.updatedAt).toLocaleDateString()}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Private Key Path</dt>
+                <dd className="text-sm break-all">{server.ssh_private_key_path}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
+                <dd className="text-sm">{server.created_by_user?.username || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+                <dd className="text-sm">{server.created_at ? new Date(server.created_at).toLocaleString() : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Updated By</dt>
+                <dd className="text-sm">{server.updated_by_user?.username || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
+                <dd className="text-sm">{server.updated_at ? new Date(server.updated_at).toLocaleString() : "—"}</dd>
               </div>
             </dl>
           </CardContent>
@@ -230,58 +168,39 @@ export default function ServerDetailPage() {
             <CardTitle>Associated Resources</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-2 gap-4">
+            <dl className="grid gap-4">
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Operating System</dt>
                 <dd className="text-sm">
-                  {os ? (
-                    <Link href={`/operating-systems/${os.id}`} className="hover:underline">
-                      {os.name} {os.version}
-                    </Link>
-                  ) : (
-                    "Unknown"
-                  )}
+                  <Link href={`/operating-systems/${server.operating_system.id}`} className="hover:underline">
+                    {server.operating_system.name} {server.operating_system.version}
+                  </Link>
                 </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Environment</dt>
                 <dd className="text-sm">
-                  {environment ? (
-                    <Link href={`/environments/${environment.id}`} className="hover:underline">
-                      {environment.name}
-                    </Link>
-                  ) : (
-                    "Unknown"
-                  )}
+                  <Link href={`/environments/${server.environment.id}`} className="hover:underline">
+                    {server.environment.name}
+                  </Link>
                 </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Project</dt>
                 <dd className="text-sm">
-                  {project ? (
-                    <Link href={`/projects/${project.id}`} className="hover:underline">
-                      {project.name}
-                    </Link>
-                  ) : (
-                    "Unknown"
-                  )}
+                  <Link href={`/projects/${server.project.id}`} className="hover:underline">
+                    {server.project.name}
+                  </Link>
                 </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Roles</dt>
-                <dd className="text-sm">
-                  {roles.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {roles.map((role) => (
-                        <Link key={role?.id} href={`/roles/${role?.id}`} className="hover:underline">
-                          {role?.name}
-                          {roles.indexOf(role as any) < roles.length - 1 ? ", " : ""}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    "None"
-                  )}
+                <dd className="text-sm flex flex-wrap gap-2">
+                  {server.roles.map((role) => (
+                    <Link key={role.id} href={`/roles/${role.id}`} className="hover:underline">
+                      {role.name}
+                    </Link>
+                  ))}
                 </dd>
               </div>
             </dl>
@@ -290,8 +209,8 @@ export default function ServerDetailPage() {
       </div>
 
       <DetailSection title="Configuration History">
-        {serverConfigurations.length > 0 ? (
-          <DataTable columns={configurationColumns} data={serverConfigurations} />
+        {server.server_configurations.length > 0 ? (
+          <DataTable columns={configurationColumns} data={server.server_configurations} />
         ) : (
           <Card>
             <CardContent className="py-6 text-center">
@@ -303,8 +222,8 @@ export default function ServerDetailPage() {
       </DetailSection>
 
       <DetailSection title="Template History">
-        {serverTemplates.length > 0 ? (
-          <DataTable columns={templateColumns} data={serverTemplates} />
+        {server.server_templates.length > 0 ? (
+          <DataTable columns={templateColumns} data={server.server_templates} />
         ) : (
           <Card>
             <CardContent className="py-6 text-center">
@@ -315,21 +234,8 @@ export default function ServerDetailPage() {
         )}
       </DetailSection>
 
-      <DetailSection title="Execution History">
-        {executions.length > 0 ? (
-          <DataTable columns={executionColumns} data={executions} />
-        ) : (
-          <Card>
-            <CardContent className="py-6 text-center">
-              <ServerIcon className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No execution history available.</p>
-            </CardContent>
-          </Card>
-        )}
-      </DetailSection>
-
-      <EditServerModal />
-      <DeleteServerModal />
+      <EditServerModal onUpdated={fetchServer} />
+      <DeleteServerModal onDeleted={handleDeleted} />
     </div>
-  )
+  );
 }

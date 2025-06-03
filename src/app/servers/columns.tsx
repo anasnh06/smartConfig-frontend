@@ -15,73 +15,51 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Server } from "@/types/entities"
 import { useStore } from "@/lib/store"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { getEnvironmentById, getOperatingSystemById, getProjectById, getRoleById } from "@/lib/mock-data"
 
 export const columns: ColumnDef<Server>[] = [
   {
     accessorKey: "name",
     header: "Name",
-    cell: ({ row }) => {
-      return (
-        <Link href={`/servers/${row.original.id}`} className="font-medium hover:underline">
-          {row.getValue("name")}
-        </Link>
-      )
-    },
+    cell: ({ row }) => (
+      <Link href={`/servers/${row.original.id}`} className="font-medium hover:underline">
+        {row.getValue("name")}
+      </Link>
+    ),
   },
   {
-    accessorKey: "hostname",
-    header: "Hostname",
-  },
-  {
-    accessorKey: "ipAddress",
+    accessorKey: "ip_address",
     header: "IP Address",
   },
   {
-    accessorKey: "operatingSystemId",
+    accessorKey: "operating_system",
     header: "OS",
     cell: ({ row }) => {
-      const osId = row.getValue("operatingSystemId") as string
-      const os = getOperatingSystemById(osId)
+      const os = row.original.operating_system
       return os ? `${os.name} ${os.version}` : "Unknown"
     },
   },
   {
-    accessorKey: "roleIds",
-    header: "Role",
-    cell: ({ row }) => {
-      const roleIds = row.getValue("roleIds") as string[]
-      if (!roleIds.length) return "None"
-
-      const role = getRoleById(roleIds[0])
-      return role ? role.name : "Unknown"
-    },
-  },
-  {
-    accessorKey: "environmentId",
+    accessorKey: "environment",
     header: "Environment",
     cell: ({ row }) => {
-      const envId = row.getValue("environmentId") as string
-      const env = getEnvironmentById(envId)
+      const env = row.original.environment
       return env ? env.name : "Unknown"
     },
   },
   {
-    accessorKey: "projectId",
+    accessorKey: "project",
     header: "Project",
     cell: ({ row }) => {
-      const projectId = row.getValue("projectId") as string
-      const project = getProjectById(projectId)
+      const project = row.original.project
       return project ? project.name : "Unknown"
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
+    accessorKey: "roles",
+    header: "Roles",
     cell: ({ row }) => {
-      const status = row.getValue("status") as "online" | "offline" | "maintenance"
-      return <StatusBadge status={status} />
+      const roles = row.original.roles
+      return roles.length > 0 ? roles.map((r) => r.name).join(", ") : "None"
     },
   },
   {

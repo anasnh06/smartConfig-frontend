@@ -13,28 +13,39 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useStore } from "@/lib/store"
+import { useConfigurationsStore } from "@/lib/store/configurations"
 import { useToast } from "@/components/ui/use-toast"
 
-export function DeleteConfigurationModal() {
+interface DeleteConfigurationModalProps {
+  onDeleted?: () => void
+}
+
+export function DeleteConfigurationModal({ onDeleted }: DeleteConfigurationModalProps) {
   const { isDeleteConfigurationModalOpen, closeDeleteConfigurationModal, selectedConfiguration } = useStore()
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const { removeConfiguration } = useConfigurationsStore()
 
   const handleDelete = async () => {
     if (!selectedConfiguration) return
 
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeDeleteConfigurationModal()
-
-    toast({
-      title: "Configuration deleted",
-      description: `${selectedConfiguration.name} has been deleted successfully.`,
-    })
+    try {
+      await removeConfiguration(selectedConfiguration.id)
+      toast({
+        title: "✅ Configuration deleted",
+        description: `"${selectedConfiguration.name}" has been deleted successfully.`,
+      })
+      closeDeleteConfigurationModal()
+      if (onDeleted) onDeleted()
+    } catch (error: any) {
+      toast({
+        title: "❌ Error",
+        description: error.message,
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -43,12 +54,12 @@ export function DeleteConfigurationModal() {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the configuration
-            {selectedConfiguration ? ` "${selectedConfiguration.name}"` : ""} and remove its data from the system.
+            This will permanently delete
+            {selectedConfiguration ? ` "${selectedConfiguration.name}"` : " this configuration"} and remove it from the system.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

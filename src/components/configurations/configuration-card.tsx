@@ -1,22 +1,28 @@
 "use client"
 
 import Link from "next/link"
-import { MoreHorizontal, Play } from "lucide-react"
+import {
+  Cog,
+  Server,
+  LayoutTemplate,
+  MoreHorizontal,
+  Play
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Configuration } from "@/types/entities"
-import { useStore } from "@/lib/store"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { getOperatingSystemById } from "@/lib/mock-data"
-import { Badge } from "@/components/ui/badge"
+
+import type { Configuration } from "@/types/entities"
+import { useStore } from "@/lib/store"
 
 interface ConfigurationCardProps {
   configuration: Configuration
@@ -25,35 +31,35 @@ interface ConfigurationCardProps {
 export function ConfigurationCard({ configuration }: ConfigurationCardProps) {
   const store = useStore()
 
-  // Get OS names for display
-  const osNames = configuration.compatibleOsIds
-    .map((id) => {
-      const os = getOperatingSystemById(id)
-      return os ? os.name : null
-    })
-    .filter(Boolean)
-    .slice(0, 2)
+  const osList = configuration.operating_systems
+  const displayedOs = osList.slice(0, 2)
+  const remainingCount = osList.length > 2 ? osList.length - 2 : 0
 
-  const remainingOsCount = configuration.compatibleOsIds.length - osNames.length
+  const serverCount = configuration.configuration_servers?.length ?? 0
+  const templateCount = configuration.configuration_templates?.length ?? 0
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div className="space-y-1">
-          <CardTitle className="line-clamp-1">{configuration.name}</CardTitle>
+    <Card className="flex flex-col rounded-2xl shadow-sm">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="space-y-1 flex-1 overflow-hidden">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold leading-snug">
+            <Cog className="h-4 w-4 text-muted-foreground" />
+            <span className="truncate">{configuration.name}</span>
+          </CardTitle>
           <div className="flex flex-wrap gap-1">
-            {osNames.map((name, i) => (
-              <Badge key={i} variant="outline" className="text-xs">
-                {name}
+            {displayedOs.map((os) => (
+              <Badge key={os.id} variant="outline" className="text-xs">
+                {os.name} {os.version}
               </Badge>
             ))}
-            {remainingOsCount > 0 && (
+            {remainingCount > 0 && (
               <Badge variant="outline" className="text-xs">
-                +{remainingOsCount} more
+                +{remainingCount} more
               </Badge>
             )}
           </div>
         </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -67,17 +73,35 @@ export function ConfigurationCard({ configuration }: ConfigurationCardProps) {
               <Link href={`/configurations/${configuration.id}`}>View details</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => store.openEditConfigurationModal(configuration)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => store.openEditConfigurationModal(configuration)}>
+              Edit
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => store.openDeleteConfigurationModal(configuration)}>
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-      <CardContent className="flex-1">
-        <p className="text-sm text-muted-foreground line-clamp-2">{configuration.description}</p>
+
+      <CardContent className="flex-1 px-6 pt-1 pb-4 text-sm text-muted-foreground">
+        <p className="line-clamp-2">{configuration.description}</p>
+        <div className="mt-3 flex flex-col gap-1">
+          <div className="flex items-center gap-1">
+            <Server className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {serverCount} server{serverCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {templateCount} template{templateCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
       </CardContent>
-      <CardFooter>
+
+      <CardFooter className="px-6 pb-6 pt-0">
         <Button className="w-full gap-2" onClick={() => store.openRunConfigurationModal(configuration)}>
           <Play className="h-4 w-4" />
           Run Configuration

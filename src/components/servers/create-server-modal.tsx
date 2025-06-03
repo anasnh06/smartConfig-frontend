@@ -1,9 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
   Dialog,
@@ -12,259 +11,286 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { useStore } from "@/lib/store"
-import { useToast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { environments, operatingSystems, projects, roles } from "@/lib/mock-data"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { useStore } from "@/lib/store";
+import { useServersStore } from "@/lib/store/servers";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MultiSelect } from "@/components/shared/multi-select";
+import { useProjectsStore } from "@/lib/store/projects";
+import { useEnvironmentsStore } from "@/lib/store/environments";
+import { useRolesStore } from "@/lib/store/roles";
+import { useOperatingSystemsStore } from "@/lib/store/operating-systems";
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  hostname: z.string().min(2, "Hostname is required"),
-  ipAddress: z.string().min(7, "Valid IP address is required"),
-  operatingSystemId: z.string().min(1, "Operating system is required"),
-  roleIds: z.array(z.string()).min(1, "At least one role is required"),
-  environmentId: z.string().min(1, "Environment is required"),
-  projectId: z.string().min(1, "Project is required"),
-  status: z.enum(["online", "offline", "maintenance"]),
-})
+  name: z.string().min(2),
+  ip_address: z.string().min(7),
+  ssh_port: z.coerce.number().int().positive(),
+  ssh_user: z.string().min(2),
+  ssh_private_key_path: z.string().min(2),
+  operating_system_id: z.coerce.number(),
+  environment_id: z.coerce.number(),
+  project_id: z.coerce.number(),
+  role_ids: z.array(z.coerce.number()),
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 export function CreateServerModal() {
-  const { isCreateServerModalOpen, closeCreateServerModal } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const { isCreateServerModalOpen, closeCreateServerModal } = useStore();
+  const { toast } = useToast();
+  const addServer = useServersStore((state) => state.addServer);
+  const { projects } = useProjectsStore();
+  const { environments } = useEnvironmentsStore();
+  const { roles } = useRolesStore();
+  const { operatingSystems } = useOperatingSystemsStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      hostname: "",
-      ipAddress: "",
-      operatingSystemId: "",
-      roleIds: [],
-      environmentId: "",
-      projectId: "",
-      status: "online",
+      ip_address: "",
+      ssh_port: 22,
+      ssh_user: "",
+      ssh_private_key_path: "~/.ssh/id_rsa",
+      operating_system_id: undefined,
+      environment_id: undefined,
+      project_id: undefined,
+      role_ids: [],
     },
-  })
+  });
 
   const onSubmit = async (values: FormValues) => {
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeCreateServerModal()
-    form.reset()
-
-    toast({
-      title: "Server created",
-      description: `${values.name} has been created successfully.`,
-    })
-  }
+    try {
+      await addServer(values);
+      toast({
+        title: "Server created",
+        description: `${values.name} has been created successfully.`,
+      });
+      closeCreateServerModal();
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while creating the server.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Dialog open={isCreateServerModalOpen} onOpenChange={closeCreateServerModal}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Server</DialogTitle>
-          <DialogDescription>Add a new server to your infrastructure.</DialogDescription>
+          <DialogDescription>
+            Provide server details to add it to your infrastructure.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="web-prod-01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="hostname"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hostname</FormLabel>
-                    <FormControl>
-                      <Input placeholder="web-prod-01.example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ipAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>IP Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="192.168.1.100" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="operatingSystemId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Operating System</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an OS" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {operatingSystems.map((os) => (
-                          <SelectItem key={os.id} value={os.id}>
-                            {os.name} {os.version}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="environmentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Environment</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an environment" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {environments.map((env) => (
-                          <SelectItem key={env.id} value={env.id}>
-                            {env.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="projectId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a project" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="offline">Offline</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 pb-4"
+          >
             <FormField
               control={form.control}
-              name="roleIds"
-              render={() => (
+              name="name"
+              render={({ field }) => (
                 <FormItem>
-                  <div className="mb-2">
-                    <FormLabel>Roles</FormLabel>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {roles.map((role) => (
-                      <FormField
-                        key={role.id}
-                        control={form.control}
-                        name="roleIds"
-                        render={({ field }) => {
-                          return (
-                            <FormItem key={role.id} className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(role.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, role.id])
-                                      : field.onChange(field.value?.filter((value) => value !== role.id))
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">{role.name}</FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="server-01" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <DialogFooter>
+            <FormField
+              control={form.control}
+              name="ip_address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>IP Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="192.168.1.1" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ssh_port"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SSH Port</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ssh_user"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SSH User</FormLabel>
+                  <FormControl>
+                    <Input placeholder="root" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ssh_private_key_path"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Private Key Path</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="~/.ssh/id_rsa" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="operating_system_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Operating System</FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
+                    value={field.value?.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select OS" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-48 overflow-y-auto">
+                      {operatingSystems.map((os) => (
+                        <SelectItem key={os.id} value={os.id.toString()}>
+                          {os.name} {os.version}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="environment_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Environment</FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
+                    value={field.value?.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select environment" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-48 overflow-y-auto">
+                      {environments.map((env) => (
+                        <SelectItem key={env.id} value={env.id.toString()}>
+                          {env.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="project_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project</FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
+                    value={field.value?.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-48 overflow-y-auto">
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id.toString()}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="role_ids"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Roles</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      selected={field.value.map(String)}
+                      onChange={(vals) => field.onChange(vals.map(Number))}
+                      options={roles.map((role) => ({ label: role.name, value: role.id.toString() }))}
+                      placeholder="Select roles"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="sticky bottom-0 bg-white pt-2">
               <Button type="button" variant="outline" onClick={closeCreateServerModal}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create"}
-              </Button>
+              <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

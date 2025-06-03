@@ -11,6 +11,8 @@ import AuthContextProvider from "@/components/layout/auth-provider"
 import AuthGuard from "@/lib/auth/AuthGuard"
 import { Toaster } from "@/components/ui/toaster"
 import { ToastProvider } from "@/components/ui/use-toast"
+import { QueryProvider } from "@/components/layout/QueryProvider"; // ✅ Ajout
+
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,26 +25,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <ToastProvider> {/* ✅ Wrapping everything */}
-            <AuthContextProvider>
-              {isPublic ? (
-                children
-              ) : (
-                <AuthGuard>
-                  <div className="flex h-screen">
-                    <Sidebar />
-                    <div className="flex flex-1 flex-col">
-                      <Navbar />
-                      <main className="flex-1 overflow-auto p-6">{children}</main>
+          <ToastProvider>
+            <QueryProvider> {/* ✅ Wrap ici */}
+              <AuthContextProvider>
+                {isPublic ? (
+                  children
+                ) : (
+                  <AuthGuard>
+                    <div className="flex h-screen">
+                      <Sidebar />
+                      <div className="flex flex-1 flex-col">
+                        <Navbar />
+                        <main className="flex-1 overflow-auto p-6">{children}</main>
+                      </div>
                     </div>
-                  </div>
-                </AuthGuard>
-              )}
-              <Toaster /> {/* ✅ Renderer */}
-            </AuthContextProvider>
+                  </AuthGuard>
+                )}
+                <Toaster />
+              </AuthContextProvider>
+            </QueryProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

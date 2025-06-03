@@ -1,16 +1,22 @@
 "use client"
 
-import { configurations } from "@/lib/mock-data"
+import { useEffect } from "react"
 import { PageHeader } from "@/components/ui/page-header"
 import { useStore } from "@/lib/store"
+import { useConfigurationsStore } from "@/lib/store/configurations"
 import { CreateConfigurationModal } from "@/components/configurations/create-configuration-modal"
 import { EditConfigurationModal } from "@/components/configurations/edit-configuration-modal"
 import { DeleteConfigurationModal } from "@/components/configurations/delete-configuration-modal"
-import { RunConfigurationModal } from "@/components/configurations/run-configuration-modal"
+// import { RunConfigurationModal } from "@/components/configurations/run-configuration-modal"
 import { ConfigurationCard } from "@/components/configurations/configuration-card"
 
 export default function ConfigurationsPage() {
   const store = useStore()
+  const { configurations, fetchConfigurations } = useConfigurationsStore()
+
+  useEffect(() => {
+    fetchConfigurations()
+  }, [fetchConfigurations])
 
   return (
     <div className="space-y-6">
@@ -32,7 +38,7 @@ export default function ConfigurationsPage() {
       <CreateConfigurationModal />
       <EditConfigurationModal />
       <DeleteConfigurationModal />
-      <RunConfigurationModal />
+      {/* <RunConfigurationModal /> */}
     </div>
   )
 }

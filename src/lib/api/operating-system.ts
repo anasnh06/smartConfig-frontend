@@ -1,4 +1,4 @@
-import type { OperatingSystem } from "@/types/entities"
+import type { OperatingSystem, OperatingSystemShort } from "@/types/entities"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL as string
 
@@ -9,6 +9,15 @@ export async function getOperatingSystems(): Promise<OperatingSystem[]> {
   if (!res.ok) throw new Error("❌ Failed to fetch operating systems")
   return res.json()
 }
+
+export async function getOperatingSystemShorts(): Promise<OperatingSystemShort[]> {
+  const res = await fetch(`${API_URL}/api/v1/operating-systems/short`, {
+    credentials: "include",
+  })
+  if (!res.ok) throw new Error("❌ Failed to fetch operating system shorts")
+  return res.json()
+}
+
 
 export async function getOperatingSystem(id: number): Promise<OperatingSystem> {
   const res = await fetch(`${API_URL}/api/v1/operating-systems/${id}`, {
@@ -59,3 +68,4 @@ export async function deleteOperatingSystem(id: number): Promise<void> {
     throw new Error(error.detail || "❌ Failed to delete operating system")
   }
 }
+

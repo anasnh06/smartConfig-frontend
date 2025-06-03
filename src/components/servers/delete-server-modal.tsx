@@ -1,7 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,31 +10,39 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useStore } from "@/lib/store"
-import { useToast } from "@/components/ui/use-toast"
+} from "@/components/ui/alert-dialog";
+import { useStore } from "@/lib/store";
+import { useToast } from "@/components/ui/use-toast";
+import { useServersStore } from "@/lib/store/servers";
 
-export function DeleteServerModal() {
-  const { isDeleteServerModalOpen, closeDeleteServerModal, selectedServer } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+export function DeleteServerModal({ onDeleted }: { onDeleted?: () => void }) {
+  const { isDeleteServerModalOpen, closeDeleteServerModal, selectedServer } = useStore();
+  const removeServer = useServersStore((state) => state.removeServer);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleDelete = async () => {
-    if (!selectedServer) return
+    if (!selectedServer) return;
 
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeDeleteServerModal()
-
-    toast({
-      title: "Server deleted",
-      description: `${selectedServer.name} has been deleted successfully.`,
-    })
-  }
+    setIsLoading(true);
+    try {
+      await removeServer(selectedServer.id);
+      toast({
+        title: "Server deleted",
+        description: `${selectedServer.name} has been deleted successfully.`,
+      });
+      closeDeleteServerModal();
+      onDeleted?.(); // Appel du callback si fourni
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the server.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <AlertDialog open={isDeleteServerModalOpen} onOpenChange={closeDeleteServerModal}>
@@ -48,7 +55,7 @@ export function DeleteServerModal() {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -59,5 +66,5 @@ export function DeleteServerModal() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

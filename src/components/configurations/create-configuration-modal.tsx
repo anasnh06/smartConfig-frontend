@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -16,48 +16,57 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { operatingSystems } from "@/lib/mock-data"
+
+import { useStore } from "@/lib/store"
+import { useOperatingSystemsStore } from "@/lib/store/operating-systems"
+import { useConfigurationsStore } from "@/lib/store/configurations"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  compatibleOsIds: z.array(z.string()).min(1, "At least one operating system is required"),
+  command: z.string().min(3, "Command must be at least 3 characters"),
+  description: z.string().optional(),
+  operating_system_ids: z.array(z.number()).min(1, "Select at least one OS"),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
 export function CreateConfigurationModal() {
   const { isCreateConfigurationModalOpen, closeCreateConfigurationModal } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const { operatingSystems, fetchOperatingSystems } = useOperatingSystemsStore()
+  const { addConfiguration } = useConfigurationsStore()
+
+  useEffect(() => {
+    fetchOperatingSystems()
+  }, [])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      command: "",
       description: "",
-      compatibleOsIds: [],
+      operating_system_ids: [],
     },
   })
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeCreateConfigurationModal()
-    form.reset()
-
-    toast({
-      title: "Configuration created",
-      description: `${values.name} has been created successfully.`,
-    })
+    try {
+      await addConfiguration(values)
+      toast({ title: "✅ Configuration created", description: `${values.name} added successfully.` })
+      form.reset()
+      closeCreateConfigurationModal()
+    } catch (error: any) {
+      toast({ title: "❌ Error", description: error.message })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -65,8 +74,9 @@ export function CreateConfigurationModal() {
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Create Configuration</DialogTitle>
-          <DialogDescription>Add a new automation configuration.</DialogDescription>
+          <DialogDescription>Add a new automation configuration for selected OS.</DialogDescription>
         </DialogHeader>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -82,14 +92,15 @@ export function CreateConfigurationModal() {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
-              name="description"
+              name="command"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Command</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Basic NGINX web server configuration" className="min-h-[100px]" {...field} />
+                    <Textarea placeholder="ansible-playbook nginx.yml" className="min-h-[80px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,37 +109,46 @@ export function CreateConfigurationModal() {
 
             <FormField
               control={form.control}
-              name="compatibleOsIds"
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Optional description" className="min-h-[80px]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="operating_system_ids"
               render={() => (
                 <FormItem>
-                  <div className="mb-2">
-                    <FormLabel>Compatible Operating Systems</FormLabel>
-                  </div>
+                  <FormLabel>Compatible OS</FormLabel>
                   <div className="grid grid-cols-2 gap-2">
                     {operatingSystems.map((os) => (
                       <FormField
                         key={os.id}
                         control={form.control}
-                        name="compatibleOsIds"
-                        render={({ field }) => {
-                          return (
-                            <FormItem key={os.id} className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(os.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, os.id])
-                                      : field.onChange(field.value?.filter((value) => value !== os.id))
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {os.name} {os.version}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
+                        name="operating_system_ids"
+                        render={({ field }) => (
+                          <FormItem key={os.id} className="flex flex-row items-start space-x-3">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value.includes(os.id)}
+                                onCheckedChange={(checked) => {
+                                  const newValue = checked
+                                    ? [...field.value, os.id]
+                                    : field.value.filter((id) => id !== os.id)
+                                  field.onChange(newValue)
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">{os.name} {os.version}</FormLabel>
+                          </FormItem>
+                        )}
                       />
                     ))}
                   </div>
@@ -138,9 +158,7 @@ export function CreateConfigurationModal() {
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeCreateConfigurationModal}>
-                Cancel
-              </Button>
+              <Button type="button" variant="outline" onClick={closeCreateConfigurationModal}>Cancel</Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Creating..." : "Create"}
               </Button>

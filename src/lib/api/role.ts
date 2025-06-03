@@ -1,4 +1,4 @@
-import { Role } from "@/types/entities"
+import type { Role, RoleShort } from "@/types/entities"
 const API_URL = process.env.NEXT_PUBLIC_API_URL as string
 
 export async function getRoles(): Promise<Role[]> {
@@ -8,6 +8,15 @@ export async function getRoles(): Promise<Role[]> {
   if (!res.ok) throw new Error("❌ Failed to fetch roles")
   return res.json()
 }
+
+export async function getRoleShorts(): Promise<RoleShort[]> {
+  const res = await fetch(`${API_URL}/api/v1/roles/short`, {
+    credentials: "include",
+  })
+  if (!res.ok) throw new Error("❌ Failed to fetch role shorts")
+  return res.json()
+}
+
 
 export async function getRole(id: number): Promise<Role> {
   const res = await fetch(`${API_URL}/api/v1/roles/${id}`, {
@@ -55,3 +64,4 @@ export async function deleteRole(id: number): Promise<void> {
     throw new Error(error.detail || "❌ Failed to delete role")
   }
 }
+

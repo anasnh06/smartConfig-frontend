@@ -13,32 +13,49 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useStore } from "@/lib/store"
-import { useToast } from "@/components/ui/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { operatingSystems } from "@/lib/mock-data"
+import { useToast } from "@/components/ui/use-toast"
+
+import { useStore } from "@/lib/store"
+import { useConfigurationsStore } from "@/lib/store/configurations"
+import { useOperatingSystemsStore } from "@/lib/store/operating-systems"
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  compatibleOsIds: z.array(z.string()).min(1, "At least one operating system is required"),
+  name: z.string().min(2),
+  command: z.string().min(1, "Command is required"),
+  description: z.string().optional(),
+  compatibleOsIds: z.array(z.number()).min(1),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditConfigurationModal() {
+interface EditConfigurationModalProps {
+  onUpdated?: () => Promise<void>
+}
+
+export function EditConfigurationModal({ onUpdated }: EditConfigurationModalProps) {
   const { isEditConfigurationModalOpen, closeEditConfigurationModal, selectedConfiguration } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
+  const { updateConfiguration } = useConfigurationsStore()
+  const { operatingSystems } = useOperatingSystemsStore()
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      command: "",
       description: "",
       compatibleOsIds: [],
     },
@@ -48,27 +65,40 @@ export function EditConfigurationModal() {
     if (selectedConfiguration) {
       form.reset({
         name: selectedConfiguration.name,
-        description: selectedConfiguration.description,
-        compatibleOsIds: selectedConfiguration.compatibleOsIds,
+        command: selectedConfiguration.command,
+        description: selectedConfiguration.description || "",
+        compatibleOsIds: selectedConfiguration.operating_systems.map((os) => os.id),
       })
     }
   }, [selectedConfiguration, form])
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedConfiguration) return
-
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      await updateConfiguration(selectedConfiguration.id, {
+        name: values.name,
+        command: values.command,
+        description: values.description,
+        operating_system_ids: values.compatibleOsIds,
+      })
 
-    setIsLoading(false)
-    closeEditConfigurationModal()
+      toast({
+        title: "✅ Configuration updated",
+        description: `"${values.name}" has been updated successfully.`,
+      })
 
-    toast({
-      title: "Configuration updated",
-      description: `${values.name} has been updated successfully.`,
-    })
+      closeEditConfigurationModal()
+      if (onUpdated) await onUpdated()
+    } catch (error: any) {
+      toast({
+        title: "❌ Update failed",
+        description: error.message,
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -76,7 +106,7 @@ export function EditConfigurationModal() {
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Edit Configuration</DialogTitle>
-          <DialogDescription>Update configuration information.</DialogDescription>
+          <DialogDescription>Update configuration settings.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -93,6 +123,21 @@ export function EditConfigurationModal() {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="command"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Command</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="description"
@@ -112,34 +157,30 @@ export function EditConfigurationModal() {
               name="compatibleOsIds"
               render={() => (
                 <FormItem>
-                  <div className="mb-2">
-                    <FormLabel>Compatible Operating Systems</FormLabel>
-                  </div>
+                  <FormLabel>Compatible Operating Systems</FormLabel>
                   <div className="grid grid-cols-2 gap-2">
                     {operatingSystems.map((os) => (
                       <FormField
                         key={os.id}
                         control={form.control}
                         name="compatibleOsIds"
-                        render={({ field }) => {
-                          return (
-                            <FormItem key={os.id} className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(os.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, os.id])
-                                      : field.onChange(field.value?.filter((value) => value !== os.id))
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {os.name} {os.version}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(os.id)}
+                                onCheckedChange={(checked) =>
+                                  checked
+                                    ? field.onChange([...field.value, os.id])
+                                    : field.onChange(field.value?.filter((v) => v !== os.id))
+                                }
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {os.name} {os.version}
+                            </FormLabel>
+                          </FormItem>
+                        )}
                       />
                     ))}
                   </div>

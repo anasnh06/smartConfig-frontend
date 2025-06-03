@@ -1,4 +1,4 @@
-import type { Project } from "@/types/entities"
+import type { Project, ProjectShort } from "@/types/entities"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL as string
 
@@ -7,6 +7,14 @@ export async function getProjects(): Promise<Project[]> {
     credentials: "include",
   })
   if (!res.ok) throw new Error("❌ Failed to fetch projects")
+  return res.json()
+}
+
+export async function getProjectShorts(): Promise<ProjectShort[]> {
+  const res = await fetch(`${API_URL}/api/v1/projects/short`, {
+    credentials: "include",
+  })
+  if (!res.ok) throw new Error("❌ Failed to fetch project shorts")
   return res.json()
 }
 
