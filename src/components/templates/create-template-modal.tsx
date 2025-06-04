@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -13,56 +13,118 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useStore } from "@/lib/store"
-import { useToast } from "@/components/ui/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { operatingSystems, roles, configurations } from "@/lib/mock-data"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
+
+import { useStore } from "@/lib/store"
+import { createTemplate } from "@/lib/api/template"
+import { bulkAttachConfigurations } from "@/lib/api/template_configuration"
+import { getOperatingSystemShorts } from "@/lib/api/operating-system"
+import { getRoleShorts } from "@/lib/api/role"
+import { getConfigurationShorts } from "@/lib/api/configuration"
+
+import type { OperatingSystemShort, RoleShort, ConfigurationShort } from "@/types/entities"
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  compatibleOsIds: z.array(z.string()).min(1, "At least one operating system is required"),
-  compatibleRoleIds: z.array(z.string()).min(1, "At least one role is required"),
-  configurationIds: z.array(z.string()).min(1, "At least one configuration is required"),
+  name: z.string().min(2),
+  description: z.string().min(5),
+  role_id: z.number(),
+  operating_system_ids: z.array(z.number()).min(1),
+  configurations: z
+    .array(
+      z.object({
+        configuration_id: z.number(),
+        order: z.number().nullable(),
+        comment: z.string().nullable(),
+      })
+    )
+    .min(1),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-export function CreateTemplateModal() {
+type Props = {
+  onCreated?: () => void
+}
+
+export function CreateTemplateModal({ onCreated }: Props) {
   const { isCreateTemplateModalOpen, closeCreateTemplateModal } = useStore()
-  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [roles, setRoles] = useState<RoleShort[]>([])
+  const [oses, setOses] = useState<OperatingSystemShort[]>([])
+  const [configs, setConfigs] = useState<ConfigurationShort[]>([])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       description: "",
-      compatibleOsIds: [],
-      compatibleRoleIds: [],
-      configurationIds: [],
+      role_id: undefined as any,
+      operating_system_ids: [],
+      configurations: [],
     },
   })
 
+  useEffect(() => {
+    getRoleShorts().then(setRoles)
+    getOperatingSystemShorts().then(setOses)
+    getConfigurationShorts().then(setConfigs)
+  }, [])
+
+  const toggleConfig = (id: number) => {
+    const existing = form.getValues("configurations")
+    const found = existing.find((c) => c.configuration_id === id)
+    if (found) {
+      form.setValue(
+        "configurations",
+        existing.filter((c) => c.configuration_id !== id)
+      )
+    } else {
+      form.setValue("configurations", [...existing, { configuration_id: id, order: null, comment: null }])
+    }
+  }
+
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
+    try {
+      const template = await createTemplate({
+        name: values.name,
+        description: values.description,
+        role_id: values.role_id,
+        operating_system_ids: values.operating_system_ids,
+      })
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+      await bulkAttachConfigurations({
+        template_id: template.id,
+        configurations: values.configurations,
+      })
 
-    setIsLoading(false)
-    closeCreateTemplateModal()
-    form.reset()
-
-    toast({
-      title: "Template created",
-      description: `${values.name} has been created successfully.`,
-    })
+      toast({
+        title: "✅ Template created",
+        description: `\"${values.name}\" has been created successfully.`,
+      })
+      onCreated?.()
+      closeCreateTemplateModal()
+      form.reset()
+    } catch (error: any) {
+      toast({ title: "❌ Error", description: error.message || "Failed to create template" })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -70,81 +132,69 @@ export function CreateTemplateModal() {
       <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Create Template</DialogTitle>
-          <DialogDescription>Add a new automation template for server provisioning.</DialogDescription>
+          <DialogDescription>Define a template and assign configurations.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Web Server Stack" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Complete web server stack with NGINX and PHP"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+
+            <FormField control={form.control} name="role_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <select
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  className="w-full rounded border px-3 py-2 text-sm"
+                >
+                  <option value="">-- Select Role --</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>{role.name}</option>
+                  ))}
+                </select>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <Tabs defaultValue="os" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="os">Operating Systems</TabsTrigger>
-                <TabsTrigger value="roles">Roles</TabsTrigger>
                 <TabsTrigger value="configs">Configurations</TabsTrigger>
               </TabsList>
+
               <TabsContent value="os" className="border rounded-md p-4 mt-2">
                 <FormField
                   control={form.control}
-                  name="compatibleOsIds"
+                  name="operating_system_ids"
                   render={() => (
                     <FormItem>
-                      <div className="mb-2">
-                        <FormLabel>Compatible Operating Systems</FormLabel>
-                      </div>
+                      <FormLabel>Compatible OS</FormLabel>
                       <div className="grid grid-cols-2 gap-2">
-                        {operatingSystems.map((os) => (
+                        {oses.map((os) => (
                           <FormField
                             key={os.id}
                             control={form.control}
-                            name="compatibleOsIds"
-                            render={({ field }) => {
-                              return (
-                                <FormItem key={os.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(os.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, os.id])
-                                          : field.onChange(field.value?.filter((value) => value !== os.id))
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    {os.name} {os.version}
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
+                            name="operating_system_ids"
+                            render={({ field }) => (
+                              <FormItem className="flex items-center space-x-3">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value.includes(os.id)}
+                                    onCheckedChange={(checked) =>
+                                      checked
+                                        ? field.onChange([...field.value, os.id])
+                                        : field.onChange(field.value.filter((v) => v !== os.id))
+                                    }
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">{os.name} {os.version}</FormLabel>
+                              </FormItem>
+                            )}
                           />
                         ))}
                       </div>
@@ -153,80 +203,54 @@ export function CreateTemplateModal() {
                   )}
                 />
               </TabsContent>
-              <TabsContent value="roles" className="border rounded-md p-4 mt-2">
-                <FormField
-                  control={form.control}
-                  name="compatibleRoleIds"
-                  render={() => (
-                    <FormItem>
-                      <div className="mb-2">
-                        <FormLabel>Compatible Roles</FormLabel>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {roles.map((role) => (
-                          <FormField
-                            key={role.id}
-                            control={form.control}
-                            name="compatibleRoleIds"
-                            render={({ field }) => {
-                              return (
-                                <FormItem key={role.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(role.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, role.id])
-                                          : field.onChange(field.value?.filter((value) => value !== role.id))
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">{role.name}</FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
+
               <TabsContent value="configs" className="border rounded-md p-4 mt-2">
                 <FormField
                   control={form.control}
-                  name="configurationIds"
+                  name="configurations"
                   render={() => (
                     <FormItem>
-                      <div className="mb-2">
-                        <FormLabel>Included Configurations</FormLabel>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {configurations.map((config) => (
-                          <FormField
-                            key={config.id}
-                            control={form.control}
-                            name="configurationIds"
-                            render={({ field }) => {
-                              return (
-                                <FormItem key={config.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(config.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...field.value, config.id])
-                                          : field.onChange(field.value?.filter((value) => value !== config.id))
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">{config.name}</FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
+                      <FormLabel>Configurations</FormLabel>
+                      <div className="space-y-2">
+                        {configs.map((config) => {
+                          const selected = form.watch("configurations").find((c) => c.configuration_id === config.id)
+                          return (
+                            <div key={config.id} className="flex flex-col border rounded p-2">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  checked={!!selected}
+                                  onCheckedChange={() => toggleConfig(config.id)}
+                                />
+                                <span>{config.name}</span>
+                              </div>
+                              {selected && (
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <Input
+                                    type="number"
+                                    placeholder="Order (optional)"
+                                    value={selected.order ?? ""}
+                                    onChange={(e) => {
+                                      const updated = form.getValues("configurations").map((c) =>
+                                        c.configuration_id === config.id ? { ...c, order: Number(e.target.value) || null } : c
+                                      )
+                                      form.setValue("configurations", updated)
+                                    }}
+                                  />
+                                  <Input
+                                    placeholder="Comment (optional)"
+                                    value={selected.comment ?? ""}
+                                    onChange={(e) => {
+                                      const updated = form.getValues("configurations").map((c) =>
+                                        c.configuration_id === config.id ? { ...c, comment: e.target.value || null } : c
+                                      )
+                                      form.setValue("configurations", updated)
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -236,12 +260,8 @@ export function CreateTemplateModal() {
             </Tabs>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeCreateTemplateModal}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create"}
-              </Button>
+              <Button type="button" variant="outline" onClick={closeCreateTemplateModal}>Cancel</Button>
+              <Button type="submit" disabled={isLoading}>{isLoading ? "Creating..." : "Create Template"}</Button>
             </DialogFooter>
           </form>
         </Form>

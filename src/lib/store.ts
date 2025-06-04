@@ -9,6 +9,7 @@ import type {
   OperatingSystem,
   Project,
   Execution,
+  TemplateConfiguration,
 } from "@/types/entities"
 
 interface ModalState {
@@ -25,6 +26,9 @@ interface ModalState {
   isCreateTemplateModalOpen: boolean
   isEditTemplateModalOpen: boolean
   isDeleteTemplateModalOpen: boolean
+  isAttachConfigToTemplateModalOpen: boolean
+  isEditTemplateConfigurationModalOpen: boolean
+  isDeleteTemplateConfigurationModalOpen: boolean
   isCreateRoleModalOpen: boolean
   isEditRoleModalOpen: boolean
   isDeleteRoleModalOpen: boolean
@@ -45,6 +49,7 @@ interface ModalState {
   selectedServer: Server | null
   selectedConfiguration: Configuration | null
   selectedTemplate: Template | null
+  selectedTemplateConfiguration: TemplateConfiguration | null
   selectedRole: Role | null
   selectedEnvironment: Environment | null
   selectedOs: OperatingSystem | null
@@ -80,6 +85,13 @@ interface ModalActions {
   closeEditTemplateModal: () => void
   openDeleteTemplateModal: (template: Template) => void
   closeDeleteTemplateModal: () => void
+  openAttachConfigToTemplateModal: (template: Template) => void
+  closeAttachConfigToTemplateModal: () => void
+  openEditTemplateConfigurationModal: (tc: TemplateConfiguration) => void
+  closeEditTemplateConfigurationModal: () => void
+  openDeleteTemplateConfigurationModal: (tc: TemplateConfiguration) => void
+  closeDeleteTemplateConfigurationModal: () => void
+
 
   openCreateRoleModal: () => void
   closeCreateRoleModal: () => void
@@ -170,6 +182,7 @@ export const useStore = create<Store>((set) => ({
   isCreateTemplateModalOpen: false,
   isEditTemplateModalOpen: false,
   isDeleteTemplateModalOpen: false,
+  isAttachConfigToTemplateModalOpen: false,
   selectedTemplate: null,
   openCreateTemplateModal: () => set({ isCreateTemplateModalOpen: true }),
   closeCreateTemplateModal: () => set({ isCreateTemplateModalOpen: false }),
@@ -177,6 +190,17 @@ export const useStore = create<Store>((set) => ({
   closeEditTemplateModal: () => set({ isEditTemplateModalOpen: false, selectedTemplate: null }),
   openDeleteTemplateModal: (template) => set({ isDeleteTemplateModalOpen: true, selectedTemplate: template }),
   closeDeleteTemplateModal: () => set({ isDeleteTemplateModalOpen: false, selectedTemplate: null }),
+  openAttachConfigToTemplateModal: (template) => set({ isAttachConfigToTemplateModalOpen: true, selectedTemplate: template }),
+  closeAttachConfigToTemplateModal: () => set({ isAttachConfigToTemplateModalOpen: false, selectedTemplate: null }),
+
+  // ==== TEMPLATE CONFIGURATION ====
+  isEditTemplateConfigurationModalOpen: false,
+  isDeleteTemplateConfigurationModalOpen: false,
+  selectedTemplateConfiguration: null,
+  openEditTemplateConfigurationModal: (tc) => set({ isEditTemplateConfigurationModalOpen: true, selectedTemplateConfiguration: tc }),
+  closeEditTemplateConfigurationModal: () => set({ isEditTemplateConfigurationModalOpen: false, selectedTemplateConfiguration: null }),
+  openDeleteTemplateConfigurationModal: (tc) => set({ isDeleteTemplateConfigurationModalOpen: true, selectedTemplateConfiguration: tc }),
+  closeDeleteTemplateConfigurationModal: () => set({ isDeleteTemplateConfigurationModalOpen: false, selectedTemplateConfiguration: null }),
 
   // ==== ENVIRONMENT ====
   isCreateEnvironmentModalOpen: false,

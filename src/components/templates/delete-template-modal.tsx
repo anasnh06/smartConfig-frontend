@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,27 +13,37 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
+import { deleteTemplate } from "@/lib/api/template"
 
-export function DeleteTemplateModal() {
+type Props = {
+  onDeleted?: () => void
+}
+
+export function DeleteTemplateModal({ onDeleted }: Props) {
   const { isDeleteTemplateModalOpen, closeDeleteTemplateModal, selectedTemplate } = useStore()
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
   const handleDelete = async () => {
     if (!selectedTemplate) return
-
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    closeDeleteTemplateModal()
-
-    toast({
-      title: "Template deleted",
-      description: `${selectedTemplate.name} has been deleted successfully.`,
-    })
+    try {
+      await deleteTemplate(selectedTemplate.id)
+      toast({
+        title: "✅ Template deleted",
+        description: `"${selectedTemplate.name}" has been successfully deleted.`,
+      })
+      closeDeleteTemplateModal()
+      onDeleted?.()
+    } catch (error: any) {
+      toast({
+        title: "❌ Error",
+        description: error.message || "Failed to delete the template.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -43,12 +52,12 @@ export function DeleteTemplateModal() {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the template
-            {selectedTemplate ? ` "${selectedTemplate.name}"` : ""} and remove its data from the system.
+            This will permanently delete
+            {selectedTemplate ? ` "${selectedTemplate.name}"` : " this template"} and remove all associated data.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

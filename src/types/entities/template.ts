@@ -1,25 +1,35 @@
-import type { OperatingSystemShort } from "./operating-system"
-import type { RoleShort } from "./role"
-import type { TemplateConfigurationShort } from "./template_configuration"
-import type { ServerTemplateShortForTemplate } from "./server_template"
 import type { UserShort } from "./user"
-
-export type TemplateShort = {
-  id: number
-  name: string
-  operating_systems: OperatingSystemShort[]
-}
+import type { RoleShort } from "./role"
+import type { OperatingSystemShort } from "./operating-system"
+import type { TemplateConfigurationShort } from "./template_configuration"
+import type { ServerTemplateShort } from "./server_template"
 
 export type Template = {
   id: number
   name: string
-  description?: string
+  description?: string | null
   created_at: string
-  updated_at?: string
-  created_by_user?: UserShort
-  updated_by_user?: UserShort
-  role?: RoleShort
+  updated_at?: string | null
+  created_by_user?: UserShort | null
+  updated_by_user?: UserShort | null
+  role?: RoleShort | null
   operating_systems: OperatingSystemShort[]
   template_configurations: TemplateConfigurationShort[]
-  template_servers: ServerTemplateShortForTemplate[]
+  template_servers: ServerTemplateShort[]
 }
+
+export type TemplateShort = {
+  id: number
+  name: string
+  role?: RoleShort | null
+  operating_systems: OperatingSystemShort[]
+}
+
+export type CreateTemplateData = {
+  name: string
+  description?: string
+  role_id?: number
+  operating_system_ids: number[]
+}
+
+export type UpdateTemplateData = Partial<CreateTemplateData>
