@@ -182,7 +182,6 @@ export const useStore = create<Store>((set) => ({
   isCreateTemplateModalOpen: false,
   isEditTemplateModalOpen: false,
   isDeleteTemplateModalOpen: false,
-  isAttachConfigToTemplateModalOpen: false,
   selectedTemplate: null,
   openCreateTemplateModal: () => set({ isCreateTemplateModalOpen: true }),
   closeCreateTemplateModal: () => set({ isCreateTemplateModalOpen: false }),
@@ -190,13 +189,15 @@ export const useStore = create<Store>((set) => ({
   closeEditTemplateModal: () => set({ isEditTemplateModalOpen: false, selectedTemplate: null }),
   openDeleteTemplateModal: (template) => set({ isDeleteTemplateModalOpen: true, selectedTemplate: template }),
   closeDeleteTemplateModal: () => set({ isDeleteTemplateModalOpen: false, selectedTemplate: null }),
-  openAttachConfigToTemplateModal: (template) => set({ isAttachConfigToTemplateModalOpen: true, selectedTemplate: template }),
-  closeAttachConfigToTemplateModal: () => set({ isAttachConfigToTemplateModalOpen: false, selectedTemplate: null }),
+  
 
   // ==== TEMPLATE CONFIGURATION ====
+  isAttachConfigToTemplateModalOpen: false,
   isEditTemplateConfigurationModalOpen: false,
   isDeleteTemplateConfigurationModalOpen: false,
   selectedTemplateConfiguration: null,
+  openAttachConfigToTemplateModal: (template) => set({ isAttachConfigToTemplateModalOpen: true, selectedTemplate: template }),
+  closeAttachConfigToTemplateModal: () => set({ isAttachConfigToTemplateModalOpen: false, selectedTemplate: null }),
   openEditTemplateConfigurationModal: (tc) => set({ isEditTemplateConfigurationModalOpen: true, selectedTemplateConfiguration: tc }),
   closeEditTemplateConfigurationModal: () => set({ isEditTemplateConfigurationModalOpen: false, selectedTemplateConfiguration: null }),
   openDeleteTemplateConfigurationModal: (tc) => set({ isDeleteTemplateConfigurationModalOpen: true, selectedTemplateConfiguration: tc }),

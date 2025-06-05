@@ -2,9 +2,9 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 
 interface PageHeaderProps {
-  title: string
+  title: ReactNode // string est inclus dans ReactNode
   description?: string
-  icon?: ReactNode         // ✅ Ajout ici
+  icon?: ReactNode
   action?: {
     label: string
     onClick: () => void

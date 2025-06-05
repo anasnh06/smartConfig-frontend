@@ -35,6 +35,32 @@ export async function bulkAttachConfigurations(data: BulkAttachToTemplate): Prom
   return res.json()
 }
 
+export async function replaceTemplateConfigurations(
+  templateId: number,
+  configurations: {
+    configuration_id: number
+    order: number | null
+    comment: string | null
+  }[]
+) {
+  const res = await fetch(`${API_URL}/api/v1/template-configurations/replace`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      template_id: templateId,
+      configurations,
+    }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "❌ Failed to replace configurations");
+  }
+  return await res.json();
+}
+
+
+
 export async function updateTemplateConfiguration(
   id: number,
   data: TemplateConfigurationUpdate

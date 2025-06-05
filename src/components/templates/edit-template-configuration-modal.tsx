@@ -28,24 +28,37 @@ import { useToast } from "@/components/ui/use-toast"
 import { useStore } from "@/lib/store"
 import { updateTemplateConfiguration } from "@/lib/api/template_configuration"
 
-const formSchema = z.object({
-  order: z.number().nullable().optional(),
-  comment: z.string().nullable().optional(),
+const rawSchema = z.object({
+  order: z
+    .preprocess((val) => {
+      if (val === "" || val === null || val === undefined) return null
+      const parsed = Number(val)
+      return isNaN(parsed) ? null : parsed
+    }, z.number().nullable().refine((val) => val === null || val > 0, {
+      message: "Order must be a positive number.",
+    })),
+  comment: z.string().nullable().optional(), // <-- Ajouté pour gérer le champ comment
 })
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = {
+  order: number | null
+  comment?: string | null
+}
 
 type Props = {
   onUpdated?: () => void
 }
 
 export function EditTemplateConfigurationModal({ onUpdated }: Props) {
-  const { isEditTemplateConfigurationModalOpen, closeEditTemplateConfigurationModal, selectedTemplateConfiguration } =
-    useStore()
+  const {
+    isEditTemplateConfigurationModalOpen,
+    closeEditTemplateConfigurationModal,
+    selectedTemplateConfiguration,
+  } = useStore()
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(rawSchema) as any, // 👈 seule solution fiable ici
     defaultValues: {
       order: null,
       comment: null,
@@ -102,7 +115,11 @@ export function EditTemplateConfigurationModal({ onUpdated }: Props) {
                 <FormItem>
                   <FormLabel>Order (optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} value={field.value ?? ""} />
+                    <Input
+                      type="number"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

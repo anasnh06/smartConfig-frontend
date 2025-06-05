@@ -46,7 +46,7 @@ export default function RoleDetailPage() {
     fetchRole()
   }, [roleId])
 
-  // ... Columns identiques
+  // Table columns for servers
   const serverColumns: ColumnDef<ServerShort>[] = [
     {
       accessorKey: "name",
@@ -60,6 +60,7 @@ export default function RoleDetailPage() {
     },
   ]
 
+  // Table columns for templates (name + OS)
   const templateColumns: ColumnDef<TemplateShort>[] = [
     {
       accessorKey: "name",
@@ -70,9 +71,35 @@ export default function RoleDetailPage() {
         </Link>
       ),
     },
+    {
+      id: "operating_systems",
+      header: "Operating Systems",
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.original.operating_systems?.length > 0 ? (
+            row.original.operating_systems.map((os) => (
+              <span
+                key={os.id}
+                className="inline-block bg-gray-100 rounded px-2 py-0.5 text-xs text-gray-800"
+              >
+                {os.name} {os.version}
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-400 italic">—</span>
+          )}
+        </div>
+      ),
+    },
   ]
 
-  if (isLoading) return <p className="text-center">Loading...</p>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <span className="text-muted-foreground text-lg">Loading...</span>
+      </div>
+    )
+  }
 
   if (!role) {
     return (
@@ -89,71 +116,76 @@ export default function RoleDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/roles">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <PageHeader title={role.name} description={role.description || ""} />
+    <div className="w-full py-8 px-2 sm:px-6 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild className="border border-gray-200 bg-white hover:bg-gray-100">
+            <Link href="/roles">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <PageHeader
+            title={role.name}
+            description={role.description || ""}
+          />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" className="gap-2" onClick={() => store.openEditRoleModal(role)}>
+            <Edit className="h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+            onClick={() => store.openDeleteRoleModal(role)}
+          >
+            <Trash className="h-4 w-4" />
+            Delete
+          </Button>
+        </div>
       </div>
 
-      <div className="flex gap-4">
-        <Button variant="outline" onClick={() => store.openEditRoleModal(role)}>
-          <Edit className="h-4 w-4" />
-          Edit
-        </Button>
-        <Button
-          variant="outline"
-          className="text-destructive"
-          onClick={() => store.openDeleteRoleModal(role)}
-        >
-          <Trash className="h-4 w-4" />
-          Delete
-        </Button>
-      </div>
-
-      {/* Informations du rôle */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      {/* Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="shadow border border-gray-100 bg-white">
           <CardHeader>
-            <CardTitle>Role Information</CardTitle>
+            <CardTitle className="text-gray-900 text-lg">Role Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid gap-4">
+            <dl className="grid grid-cols-1 gap-y-3">
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Name</dt>
-                <dd className="text-sm">{role.name}</dd>
+                <dt className="text-xs font-semibold text-gray-500 uppercase">Name</dt>
+                <dd className="text-sm text-gray-900">{role.name}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Description</dt>
-                <dd className="text-sm">{role.description || "—"}</dd>
+                <dt className="text-xs font-semibold text-gray-500 uppercase">Description</dt>
+                <dd className="text-sm text-gray-900">{role.description || "—"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
-                <dd className="text-sm">{role.created_at ? new Date(role.created_at).toLocaleString() : "—"}</dd>
+                <dt className="text-xs font-semibold text-gray-500 uppercase">Created At</dt>
+                <dd className="text-sm text-gray-900">{role.created_at ? new Date(role.created_at).toLocaleString() : "—"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
-                <dd className="text-sm">{role.created_by_user?.username || "—"}</dd>
+                <dt className="text-xs font-semibold text-gray-500 uppercase">Created By</dt>
+                <dd className="text-sm text-gray-900">{role.created_by_user?.username || "—"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
-                <dd className="text-sm">{role.updated_at ? new Date(role.updated_at).toLocaleString() : "—"}</dd>
+                <dt className="text-xs font-semibold text-gray-500 uppercase">Updated At</dt>
+                <dd className="text-sm text-gray-900">{role.updated_at ? new Date(role.updated_at).toLocaleString() : "—"}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Updated By</dt>
-                <dd className="text-sm">{role.updated_by_user?.username || "—"}</dd>
+                <dt className="text-xs font-semibold text-gray-500 uppercase">Updated By</dt>
+                <dd className="text-sm text-gray-900">{role.updated_by_user?.username || "—"}</dd>
               </div>
             </dl>
           </CardContent>
         </Card>
 
         {/* Statistiques */}
-        <Card>
+        <Card className="shadow border border-gray-100 bg-white">
           <CardHeader>
-            <CardTitle>Usage Statistics</CardTitle>
+            <CardTitle className="text-gray-900 text-lg">Usage Statistics</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -176,34 +208,35 @@ export default function RoleDetailPage() {
         </Card>
       </div>
 
-      {/* Sections */}
+      {/* Servers Section */}
       <DetailSection title="Servers with this Role">
-        {role.servers?.length ? (
-          <DataTable columns={serverColumns} data={role.servers} searchColumn="name" searchPlaceholder="Search servers..." />
-        ) : (
-          <Card>
-            <CardContent className="py-6 text-center">
-              <Server className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No servers are using this role.</p>
-            </CardContent>
-          </Card>
-        )}
+        <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-2">
+          {role.servers?.length ? (
+            <DataTable columns={serverColumns} data={role.servers} searchColumn="name" searchPlaceholder="Search servers..." />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Server className="mx-auto h-8 w-8 text-gray-300" />
+              <p className="mt-2 text-gray-400">No servers are using this role.</p>
+            </div>
+          )}
+        </div>
       </DetailSection>
 
+      {/* Templates Section */}
       <DetailSection title="Compatible Templates">
-        {role.templates?.length ? (
-          <DataTable columns={templateColumns} data={role.templates} searchColumn="name" searchPlaceholder="Search templates..." />
-        ) : (
-          <Card>
-            <CardContent className="py-6 text-center">
-              <Layers className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-muted-foreground">No templates are compatible with this role.</p>
-            </CardContent>
-          </Card>
-        )}
+        <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-2">
+          {role.templates?.length ? (
+            <DataTable columns={templateColumns} data={role.templates} searchColumn="name" searchPlaceholder="Search templates..." />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Layers className="mx-auto h-8 w-8 text-gray-300" />
+              <p className="mt-2 text-gray-400">No templates are compatible with this role.</p>
+            </div>
+          )}
+        </div>
       </DetailSection>
 
-      {/* ✅ Modales avec actions */}
+      {/* Modals */}
       <EditRoleModal onUpdated={fetchRole} />
       <DeleteRoleModal onDeleted={handleDeleted} />
     </div>

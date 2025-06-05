@@ -6,7 +6,8 @@ import {
   Play,
   Layers,
   Server,
-  ShieldCheck
+  ShieldCheck,
+  FileCode, // Ajouté pour l'icône configuration (sidebar)
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
 import type { Template } from "@/types/entities"
 import { useStore } from "@/lib/store"
@@ -43,7 +45,7 @@ export function TemplateCard({ template }: TemplateCardProps) {
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="space-y-1 flex-1 overflow-hidden">
           <CardTitle className="flex items-center gap-2 text-base font-semibold leading-snug">
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <Layers className="h-4 w-4 text-muted-foreground" /> {/* Utilise Layers (sidebar) */}
             <span className="truncate">{template.name}</span>
           </CardTitle>
 
@@ -61,10 +63,22 @@ export function TemplateCard({ template }: TemplateCardProps) {
                 {os.name} {os.version}
               </Badge>
             ))}
+
             {remainingOsCount > 0 && (
-              <Badge variant="outline" className="text-xs">
-                +{remainingOsCount} more
-              </Badge>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Badge variant="outline" className="text-xs cursor-pointer">
+                    +{remainingOsCount} more
+                  </Badge>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-fit p-2 space-y-1 text-xs">
+                  {osList.slice(2).map((os) => (
+                    <div key={os.id}>
+                      {os.name} {os.version}
+                    </div>
+                  ))}
+                </HoverCardContent>
+              </HoverCard>
             )}
           </div>
         </div>
@@ -91,12 +105,11 @@ export function TemplateCard({ template }: TemplateCardProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-
       <CardContent className="flex-1 px-6 pt-1 pb-4 text-sm text-muted-foreground">
         <p className="line-clamp-2">{template.description}</p>
         <div className="mt-3 flex flex-col gap-1">
           <div className="flex items-center gap-1">
-            <Layers className="h-4 w-4 text-muted-foreground" />
+            <FileCode className="h-4 w-4 text-muted-foreground" /> {/* Utilise FileCode (sidebar) */}
             <span className="text-xs text-muted-foreground">
               {configCount} configuration{configCount !== 1 ? "s" : ""}
             </span>
@@ -109,7 +122,6 @@ export function TemplateCard({ template }: TemplateCardProps) {
           </div>
         </div>
       </CardContent>
-
       <CardFooter className="px-6 pb-6 pt-0">
         <Button className="w-full gap-2" onClick={() => store.openRunTemplateModal(template)}>
           <Play className="h-4 w-4" />

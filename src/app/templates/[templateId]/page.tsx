@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash, Plus, Pencil, X } from "lucide-react";
+import { ArrowLeft, Edit, Trash, Plus, Pencil, X, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,6 @@ import { DataTable } from "@/components/ui/data-table";
 
 import { EditTemplateModal } from "@/components/templates/edit-template-modal";
 import { DeleteTemplateModal } from "@/components/templates/delete-template-modal";
-import { RunTemplateModal } from "@/components/templates/run-template-modal";
 import { AttachTemplateConfigurationModal } from "@/components/templates/attach-template-configuration-modal";
 import { EditTemplateConfigurationModal } from "@/components/templates/edit-template-configuration-modal";
 import { DeleteTemplateConfigurationModal } from "@/components/templates/delete-template-configuration-modal";
@@ -49,19 +48,35 @@ export default function TemplateDetailPage() {
   const columns: ColumnDef<TemplateConfiguration>[] = [
     {
       accessorKey: "configuration.name",
-      header: "Configuration",
+      header: () => <span className="text-gray-900 font-medium">Configuration</span>,
+      cell: ({ row }) => (
+        <Link
+          href={`/configurations/${row.original.configuration.id}`}
+          className="text-blue-700 font-medium hover:underline"
+        >
+          {row.original.configuration.name}
+        </Link>
+      ),
     },
     {
       accessorKey: "order",
-      header: "Order",
+      header: () => <span className="text-gray-900 font-medium">Order</span>,
+      cell: ({ row }) => (
+        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs">
+          {row.original.order}
+        </span>
+      ),
     },
     {
       accessorKey: "comment",
-      header: "Comment",
+      header: () => <span className="text-gray-900 font-medium">Comment</span>,
+      cell: ({ row }) => (
+        <span className="text-gray-700">{row.original.comment || <span className="text-gray-400 italic">—</span>}</span>
+      ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "",
       cell: ({ row }) => {
         const tc = row.original;
         return (
@@ -70,126 +85,219 @@ export default function TemplateDetailPage() {
               size="icon"
               variant="ghost"
               onClick={() => store.openEditTemplateConfigurationModal(tc)}
+              className="hover:bg-gray-100"
+              aria-label="Edit"
             >
               <Pencil className="w-4 h-4" />
             </Button>
             <Button
               size="icon"
               variant="ghost"
-              className="text-destructive"
+              className="text-red-600 hover:bg-red-50"
               onClick={() => store.openDeleteTemplateConfigurationModal(tc)}
+              aria-label="Delete"
             >
               <X className="w-4 h-4" />
             </Button>
           </div>
         );
       },
+      enableSorting: false,
+      enableHiding: false,
     },
   ];
 
   if (!template) return null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/templates">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <PageHeader
-          title={template.name}
-          description={template.description ?? undefined}
-        />
-      </div>
-
-      <div className="flex gap-4">
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() => store.openEditTemplateModal(template)}
-        >
-          <Edit className="h-4 w-4" />
-          Edit
-        </Button>
-        <Button
-          variant="outline"
-          className="gap-2 text-destructive"
-          onClick={() => store.openDeleteTemplateModal(template)}
-        >
-          <Trash className="h-4 w-4" />
-          Delete
-        </Button>
-        <Button
-          className="gap-2 ml-auto"
-          onClick={() => store.openRunTemplateModal(template)}
-        >
-          <Plus className="h-4 w-4" />
-          Run Template
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Template Info</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Role</div>
-              <div className="text-sm">{template.role?.name}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Operating Systems</div>
-              <div className="flex flex-wrap gap-2">
-                {template.operating_systems.map((os: any) => (
-                  <Badge key={os.id} variant="outline">
-                    <Link href={`/operating-systems/${os.id}`} className="hover:underline">
-                      {os.name} {os.version}
-                    </Link>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Created At</div>
-              <div className="text-sm">
-                {template.created_at ? new Date(template.created_at).toLocaleString() : "N/A"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Updated At</div>
-              <div className="text-sm">
-                {template.updated_at ? new Date(template.updated_at).toLocaleString() : "N/A"}
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-10 px-2 sm:px-8">
+      <div className="w-full space-y-8">
+        {/* Header + Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild className="border border-gray-200 bg-white hover:bg-gray-100">
+              <Link href="/templates">
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <PageHeader
+              title={template.name}
+              description={template.description ?? undefined}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => store.openEditTemplateModal(template)}
+            >
+              <Edit className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => store.openDeleteTemplateModal(template)}
+            >
+              <Trash className="h-4 w-4" />
+              Delete
+            </Button>
+            <Button
+              className="gap-2 ml-auto bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => store.openRunTemplateModal(template)}
+            >
+              <Plus className="h-4 w-4" />
+              Run Template
+            </Button>
+          </div>
+        </div>
 
-      <DetailSection
-        title="Included Configurations"
-        action={{
-          label: "Attach",
-          onClick: () => store.openAttachConfigToTemplateModal?.(template),
-        }}
-      >
-        <DataTable
-          columns={columns}
-          data={[...template.template_configurations].sort((a, b) => {
-            const aOrder = a.order ?? Infinity;
-            const bOrder = b.order ?? Infinity;
-            return aOrder - bOrder;
-          })}
-        />
-      </DetailSection>
+        {/* Template Info */}
+        <Card className="shadow border border-gray-100 bg-white">
+          <CardHeader>
+            <CardTitle className="text-gray-900 text-lg">Template Info</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Role</div>
+                <div className="text-sm text-gray-900">{template.role?.name || <span className="text-gray-400 italic">—</span>}</div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Operating Systems</div>
+                <div className="flex flex-wrap gap-2">
+                  {template.operating_systems.length > 0 ? (
+                    template.operating_systems.map((os: any) => (
+                      <Badge key={os.id} variant="outline" className="text-xs border-gray-300">
+                        <Link href={`/operating-systems/${os.id}`} className="hover:underline text-gray-800">
+                          {os.name} {os.version}
+                        </Link>
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-gray-400 italic">—</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Created At</div>
+                <div className="text-sm text-gray-900">
+                  {template.created_at ? new Date(template.created_at).toLocaleString() : "N/A"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Updated At</div>
+                <div className="text-sm text-gray-900">
+                  {template.updated_at ? new Date(template.updated_at).toLocaleString() : "N/A"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Created By</div>
+                <div className="text-sm flex items-center gap-2 text-gray-900">
+                  {template.created_by_user ? (
+                    <>
+                      <User className="h-4 w-4" />
+                      {template.created_by_user.username}
+                    </>
+                  ) : (
+                    <span className="text-gray-400 italic">—</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Updated By</div>
+                <div className="text-sm flex items-center gap-2 text-gray-900">
+                  {template.updated_by_user ? (
+                    <>
+                      <User className="h-4 w-4" />
+                      {template.updated_by_user.username}
+                    </>
+                  ) : (
+                    <span className="text-gray-400 italic">—</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <EditTemplateModal onUpdated={fetchTemplate} />
-      <DeleteTemplateModal onDeleted={() => router.push("/templates")} />
-      <RunTemplateModal />
-      <AttachTemplateConfigurationModal onAttached={fetchTemplate} />
-      <EditTemplateConfigurationModal onUpdated={fetchTemplate} />
-      <DeleteTemplateConfigurationModal onDeleted={fetchTemplate} />
+        {/* Included Configurations */}
+        <DetailSection
+          title="Included Configurations"
+          action={{
+            label: "Attach",
+            onClick: () => store.openAttachConfigToTemplateModal?.(template),
+          }}
+        >
+          <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-2">
+            {template.template_configurations && template.template_configurations.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={[...template.template_configurations].sort((a, b) => {
+                  const aOrder = a.order ?? Infinity;
+                  const bOrder = b.order ?? Infinity;
+                  return aOrder - bOrder;
+                })}
+              />
+            ) : (
+              <div className="flex justify-center items-center py-6">
+                <p className="text-gray-400 text-center">
+                  No configurations attached to this template.
+                </p>
+              </div>
+            )}
+          </div>
+        </DetailSection>
+
+        {/* Associated Servers */}
+        <Card className="shadow border border-gray-100 bg-white">
+          <CardHeader>
+            <CardTitle className="text-gray-900 text-lg">Associated Servers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {template.servers && template.servers.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border border-gray-100 rounded-lg">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-2 text-left font-semibold text-gray-700">Server Name</th>
+                      <th className="px-4 py-2 text-left font-semibold text-gray-700">IP Address</th>
+                      <th className="px-4 py-2 text-left font-semibold text-gray-700">Environment</th>
+                      <th className="px-4 py-2 text-left font-semibold text-gray-700">Project</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {template.servers.map((server: any) => (
+                      <tr key={server.id} className="border-t border-gray-100 hover:bg-gray-50">
+                        <td className="px-4 py-2">
+                          <Link href={`/servers/${server.id}`} className="hover:underline text-blue-700 font-medium">
+                            {server.name}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-2">{server.ip_address}</td>
+                        <td className="px-4 py-2">{server.environment?.name || <span className="text-gray-400 italic">—</span>}</td>
+                        <td className="px-4 py-2">{server.project?.name || <span className="text-gray-400 italic">—</span>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex justify-center items-center py-6">
+                <p className="text-gray-400 text-center">
+                  No servers attached to this template.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <EditTemplateModal onUpdated={fetchTemplate} />
+        <DeleteTemplateModal onDeleted={() => router.push("/templates")} />
+        <AttachTemplateConfigurationModal onAttached={fetchTemplate} />
+        <EditTemplateConfigurationModal onUpdated={fetchTemplate} />
+        <DeleteTemplateConfigurationModal onDeleted={fetchTemplate} />
+      </div>
     </div>
   );
 }

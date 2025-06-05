@@ -9,6 +9,7 @@ import { DeleteRoleModal } from "@/components/roles/delete-role-modal"
 import { RoleCard } from "@/components/roles/role-card"
 import { CardGrid } from "@/components/ui/card-grid"
 import { useRolesStore } from "@/lib/store/roles"
+import { Tag } from "lucide-react"
 
 export default function RolesPage() {
   const store = useStore()
@@ -25,6 +26,7 @@ export default function RolesPage() {
       <PageHeader
         title="Roles"
         description="Manage server roles for your infrastructure"
+        icon={<Tag className="h-6 w-6" />}
         action={{
           label: "Add Role",
           onClick: store.openCreateRoleModal,

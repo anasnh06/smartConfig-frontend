@@ -6,7 +6,9 @@ import {
   Server,
   LayoutTemplate,
   MoreHorizontal,
-  Play
+  Play,
+  FileCode,   // Ajouté pour l'icône configuration (sidebar)
+  Layers      // Ajouté pour l'icône template (sidebar)
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -43,7 +45,7 @@ export function ConfigurationCard({ configuration }: ConfigurationCardProps) {
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="space-y-1 flex-1 overflow-hidden">
           <CardTitle className="flex items-center gap-2 text-base font-semibold leading-snug">
-            <Cog className="h-4 w-4 text-muted-foreground" />
+            <FileCode className="h-4 w-4 text-muted-foreground" /> {/* Utilise FileCode (sidebar) */}
             <span className="truncate">{configuration.name}</span>
           </CardTitle>
           <div className="flex flex-wrap gap-1">
@@ -87,15 +89,15 @@ export function ConfigurationCard({ configuration }: ConfigurationCardProps) {
         <p className="line-clamp-2">{configuration.description}</p>
         <div className="mt-3 flex flex-col gap-1">
           <div className="flex items-center gap-1">
-            <Server className="h-4 w-4 text-muted-foreground" />
+            <Layers className="h-4 w-4 text-muted-foreground" /> {/* Utilise Layers (sidebar) */}
             <span className="text-xs text-muted-foreground">
-              {serverCount} server{serverCount !== 1 ? "s" : ""}
+              {templateCount} template{templateCount !== 1 ? "s" : ""}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+            <Server className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
-              {templateCount} template{templateCount !== 1 ? "s" : ""}
+              {serverCount} server{serverCount !== 1 ? "s" : ""}
             </span>
           </div>
         </div>

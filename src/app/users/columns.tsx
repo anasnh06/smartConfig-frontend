@@ -40,12 +40,22 @@ export const columns: ColumnDef<User>[] = [
     ),
   },
   {
+    accessorKey: "created_by_user",
+    header: "Creator",
+    cell: ({ row }) => row.original.creator?.username || "-",
+  },
+  {
     accessorKey: "created_at",
     header: "Created At",
     cell: ({ row }) => {
       const value = row.getValue("created_at") as string
       return value ? new Date(value).toLocaleDateString() : "-"
     },
+  },
+  {
+    accessorKey: "updated_by_user",
+    header: "Updater",
+    cell: ({ row }) => row.original.updater?.username || "-",
   },
   {
     accessorKey: "updated_at",
@@ -55,7 +65,6 @@ export const columns: ColumnDef<User>[] = [
       return value ? new Date(value).toLocaleDateString() : "-"
     },
   },
-
   {
     id: "actions",
     enableHiding: false,
