@@ -52,7 +52,7 @@ export async function updateConfiguration(id: number, data: Partial<{
   operating_system_ids: number[]
 }>): Promise<Configuration> {
   const res = await fetch(`${API_URL}/api/v1/configurations/${id}`, {
-    method: "PATCH",
+    method: "PATCH" ,
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

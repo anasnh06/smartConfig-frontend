@@ -10,6 +10,9 @@ import type {
   Project,
   Execution,
   TemplateConfiguration,
+  ExecutionGroup, 
+  ServerConfiguration,
+  ServerTemplate,
 } from "@/types/entities"
 
 interface ModalState {
@@ -43,6 +46,15 @@ interface ModalState {
   isDeleteProjectModalOpen: boolean
   isRunConfigurationModalOpen: boolean
   isRunTemplateModalOpen: boolean
+  isRunExecutionModalOpen: boolean
+  isReplayExecutionModalOpen: boolean
+  isReplayGroupModalOpen: boolean
+  isReplayServerTemplateModalOpen: boolean
+  isReplayServerConfigurationModalOpen: boolean
+
+  // ==== AJOUTÉ POUR LE STEPPER ====
+  draftExecutionGroups: ExecutionGroupDraft[]
+  isStepperExecutionModalOpen: boolean
 
   // États de sélection
   selectedUser: User | null
@@ -55,6 +67,24 @@ interface ModalState {
   selectedOs: OperatingSystem | null
   selectedProject: Project | null
   selectedExecution: Execution | null
+  selectedExecutionGroup: ExecutionGroup | null
+  selectedServerConfiguration: ServerConfiguration | null
+  selectedServerTemplate: ServerTemplate | null
+}
+
+interface ExecutionElement {
+  type: "template" | "configuration" | "manual"
+  id?: number
+  command?: string
+  name?: string
+  description?: string
+  order?: number | null
+}
+
+interface ExecutionGroupDraft {
+  servers: number[]
+  elements: ExecutionElement[]
+  comment?: string
 }
 
 interface ModalActions {
@@ -125,7 +155,32 @@ interface ModalActions {
   closeRunConfigurationModal: () => void
   openRunTemplateModal: (template: Template) => void
   closeRunTemplateModal: () => void
+
+  openRunExecutionModal: () => void
+  closeRunExecutionModal: () => void
+
+  openReplayExecutionModal: (execution: Execution) => void
+  closeReplayExecutionModal: () => void
+
+  openReplayGroupModal: (group: ExecutionGroup) => void
+  closeReplayGroupModal: () => void
+
+  openReplayServerTemplateModal: (serverTemplate: ServerTemplate) => void
+  closeReplayServerTemplateModal: () => void
+
+  openReplayServerConfigurationModal: (serverConfiguration: ServerConfiguration) => void
+  closeReplayServerConfigurationModal: () => void
+
+  // ==== AJOUTÉ POUR LE STEPPER ====
+  openStepperExecutionModal: () => void
+  closeStepperExecutionModal: () => void
+  addDraftGroup: (group: ExecutionGroupDraft) => void
+  removeDraftGroup: (index: number) => void
+  clearDraftGroups: () => void
+  
 }
+
+
 
 type Store = ModalState & ModalActions
 
@@ -240,12 +295,50 @@ export const useStore = create<Store>((set) => ({
   closeDeleteProjectModal: () => set({ isDeleteProjectModalOpen: false, selectedProject: null }),
 
   // ==== EXECUTION ====
+  isRunExecutionModalOpen: false,
+  isReplayExecutionModalOpen: false,
+  isReplayGroupModalOpen: false,
+  isReplayServerTemplateModalOpen: false,
+  isReplayServerConfigurationModalOpen: false,
   isRunConfigurationModalOpen: false,
   isRunTemplateModalOpen: false,
+
+  selectedExecution: null,
+  selectedExecutionGroup: null,
+  selectedServerConfiguration: null,
+  selectedServerTemplate: null,
+
+  openRunExecutionModal: () => set({ isRunExecutionModalOpen: true }),
+  closeRunExecutionModal: () => set({ isRunExecutionModalOpen: false }),
+
+  openReplayExecutionModal: (execution) => set({ isReplayExecutionModalOpen: true, selectedExecution: execution }),
+  closeReplayExecutionModal: () => set({ isReplayExecutionModalOpen: false, selectedExecution: null }),
+
+  openReplayGroupModal: (group) => set({ isReplayGroupModalOpen: true, selectedExecutionGroup: group }),
+  closeReplayGroupModal: () => set({ isReplayGroupModalOpen: false, selectedExecutionGroup: null }),
+
+  openReplayServerTemplateModal: (serverTemplate) => set({ isReplayServerTemplateModalOpen: true, selectedServerTemplate: serverTemplate }),
+  closeReplayServerTemplateModal: () => set({ isReplayServerTemplateModalOpen: false, selectedServerTemplate: null }),
+
+  openReplayServerConfigurationModal: (sc) => set({ isReplayServerConfigurationModalOpen: true, selectedServerConfiguration: sc }),
+  closeReplayServerConfigurationModal: () => set({ isReplayServerConfigurationModalOpen: false, selectedServerConfiguration: null }),
+
   openRunConfigurationModal: (configuration) => set({ isRunConfigurationModalOpen: true, selectedConfiguration: configuration }),
   closeRunConfigurationModal: () => set({ isRunConfigurationModalOpen: false, selectedConfiguration: null }),
+
   openRunTemplateModal: (template) => set({ isRunTemplateModalOpen: true, selectedTemplate: template }),
   closeRunTemplateModal: () => set({ isRunTemplateModalOpen: false, selectedTemplate: null }),
 
-  selectedExecution: null,
+
+   // ==== STEPPER EXECUTION CUSTOM ====
+  draftExecutionGroups: [],
+  isStepperExecutionModalOpen: false,
+  openStepperExecutionModal: () => set({ isStepperExecutionModalOpen: true }),
+  closeStepperExecutionModal: () => set({ isStepperExecutionModalOpen: false }),
+  addDraftGroup: (group) => set((state) => ({ draftExecutionGroups: [...state.draftExecutionGroups, group] })),
+  removeDraftGroup: (index) =>
+    set((state) => ({ draftExecutionGroups: state.draftExecutionGroups.filter((_, i) => i !== index) })),
+  clearDraftGroups: () => set({ draftExecutionGroups: [] }),
+
+  
 }))

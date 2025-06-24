@@ -30,7 +30,8 @@ export type ServerConfiguration = {
   id: number
   status?: string
   return_code?: number
-  output?: string
+  stdout?: string
+  stderr?: string
   started_at?: string
   finished_at?: string
   source?: string
