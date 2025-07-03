@@ -6,6 +6,12 @@ export type ExecutionGroupShort = {
   id: number
   name?: string
   status?: string
+  started_at?: string
+  finished_at?: string
+  created_at: string
+  updated_at?: string
+  created_by_user?: UserShort
+  updated_by_user?: UserShort
 }
 
 export type ExecutionGroup = {
@@ -23,3 +29,17 @@ export type ExecutionGroup = {
   execution: ExecutionShort
   server_configurations: ServerConfigurationShortForExecution[]
 }
+
+export type CreateExecutionGroupData = {
+  name?: string
+  status?: string
+  execution_id: number
+  playbook_path?: string
+  inventory_path?: string
+  started_at?: string
+  finished_at?: string
+}
+
+
+export type UpdateExecutionGroupData = Partial<CreateExecutionGroupData>
+

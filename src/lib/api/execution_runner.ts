@@ -123,3 +123,36 @@ export async function getGroupStatus(id: number): Promise<{
   if (!res.ok) throw new Error("❌ Failed to fetch group status")
   return res.json()
 }
+
+
+export async function launchFullExecution(data: {
+  title?: string
+  groups: {
+    name?: string
+    servers: { id: number }[]
+    elements: {
+      type: "template" | "configuration" | "manual"
+      id?: number
+      command?: string
+      name?: string
+      description?: string
+      order?: number
+    }[]
+  }[]
+}): Promise<Execution> {
+  const res = await fetch(`${BASE}/launch/full`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.detail || "❌ Failed to launch full execution")
+  }
+
+  return res.json()
+}

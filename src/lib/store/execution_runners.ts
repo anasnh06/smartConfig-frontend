@@ -11,6 +11,7 @@ import {
   replayServerConfiguration,
   getExecutionStatus,
   getGroupStatus,
+  launchFullExecution,
 } from "@/lib/api/execution_runner"
 
 interface ExecutionRunnersStore {
@@ -26,6 +27,9 @@ interface ExecutionRunnersStore {
   launchExecutionCelery: (id: number) => Promise<void>
   launchGroupAsync: (id: number) => Promise<void>
   launchGroupCelery: (id: number) => Promise<void>
+  launchFullExecution: (
+    data: Parameters<typeof launchFullExecution>[0]
+  ) => Promise<Execution>
 
   replayExecution: (id: number) => Promise<Execution>
   replayGroup: (id: number) => Promise<Execution>
@@ -148,4 +152,14 @@ export const useExecutionRunnersStore = create<ExecutionRunnersStore>((set, get)
       throw error
     }
   },
+  launchFullExecution: async (data) => {
+  try {
+    const execution = await launchFullExecution(data)
+    get().addExecution(execution)
+    return execution
+  } catch (error: any) {
+    set({ error: error.message })
+    throw error
+  }
+},
 }))

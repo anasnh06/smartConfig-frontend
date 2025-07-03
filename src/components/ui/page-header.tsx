@@ -2,13 +2,10 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 
 interface PageHeaderProps {
-  title: ReactNode // string est inclus dans ReactNode
+  title: ReactNode
   description?: string
   icon?: ReactNode
-  action?: {
-    label: string
-    onClick: () => void
-  }
+  action?: ReactNode | { label: string; onClick: () => void }
 }
 
 export function PageHeader({ title, description, icon, action }: PageHeaderProps) {
@@ -21,7 +18,12 @@ export function PageHeader({ title, description, icon, action }: PageHeaderProps
           {description && <p className="mt-1 text-muted-foreground">{description}</p>}
         </div>
       </div>
-      {action && <Button onClick={action.onClick}>{action.label}</Button>}
+      {action &&
+        (typeof action === "object" && "label" in action ? (
+          <Button onClick={action.onClick}>{action.label}</Button>
+        ) : (
+          action
+        ))}
     </div>
   )
 }

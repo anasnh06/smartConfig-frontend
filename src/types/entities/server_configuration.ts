@@ -15,8 +15,16 @@ export type ServerConfigurationShortForExecution = {
   id: number
   status?: string
   return_code?: number
-  configuration?: ConfigurationShort
+  stdout?: string
+  stderr?: string
+  started_at?: string
+  finished_at?: string
+  source?: string
+  custom_command?: string
   server: ServerShort
+  configuration?: ConfigurationShort
+  server_template?: ServerTemplateShort
+  created_by_user?: UserShort
 }
 
 export type ServerConfigurationShortForConfiguration = {
@@ -32,6 +40,7 @@ export type ServerConfiguration = {
   return_code?: number
   stdout?: string
   stderr?: string
+  log_path?: string
   started_at?: string
   finished_at?: string
   source?: string
@@ -45,3 +54,23 @@ export type ServerConfiguration = {
   configuration?: ConfigurationShort
   server_template?: ServerTemplateShort
 }
+
+// Pour Create et Update :
+
+export type CreateServerConfigurationData = {
+  status?: string
+  return_code?: number
+  stdout?: string
+  stderr?: string
+  log_path?: string
+  started_at?: string
+  finished_at?: string
+  source?: string
+  custom_command?: string
+  server_id: number
+  execution_group_id: number
+  configuration_id?: number
+  server_template_id?: number
+}
+
+export type UpdateServerConfigurationData = Partial<CreateServerConfigurationData>
