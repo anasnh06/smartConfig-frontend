@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import type {
   ServerConfigurationShortForExecution,
@@ -9,7 +10,8 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
-import { Edit, Trash } from "lucide-react";
+import { Eye, Edit, Trash } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 type Context = "group" | "server" | "configuration";
 
@@ -18,9 +20,6 @@ type SC =
   | ServerConfigurationShort
   | ServerConfigurationShortForConfiguration;
 
-/**
- * Helper pour vérifier si un champ existe
- */
 function hasField<T extends object>(obj: T, key: string): boolean {
   return key in obj && obj[key as keyof T] !== undefined;
 }
@@ -32,26 +31,28 @@ export function getServerConfigurationColumns(context: Context): ColumnDef<SC>[]
       header: "ID",
       cell: ({ row }: { row: Row<SC> }) => row.original.id,
     },
-    ...(context !== "server"
+    ...(context !== "configuration"
       ? [
           {
-            accessorKey: "server.name",
+            accessorKey: "server",
             header: "Server",
             cell: ({ row }: { row: Row<SC> }) =>
-              hasField(row.original, "server")
-                ? (row.original as any).server?.name ?? "-"
+              hasField(row.original, "server") && (row.original as any).server
+                ? `${(row.original as any).server.name} (${
+                    (row.original as any).server.ip_address ?? "-"
+                  })`
                 : "-",
           },
         ]
       : []),
-    ...(context !== "configuration"
+    ...(context !== "server"
       ? [
           {
-            accessorKey: "configuration.name",
+            accessorKey: "configuration",
             header: "Configuration",
             cell: ({ row }: { row: Row<SC> }) =>
-              hasField(row.original, "configuration")
-                ? (row.original as any).configuration?.name ?? "-"
+              hasField(row.original, "configuration") && (row.original as any).configuration
+                ? (row.original as any).configuration.name ?? "-"
                 : "-",
           },
         ]
@@ -72,12 +73,68 @@ export function getServerConfigurationColumns(context: Context): ColumnDef<SC>[]
         hasField(row.original, "source") ? (row.original as any).source ?? "-" : "-",
     },
     {
+      accessorKey: "custom_command",
+      header: "Command",
+      cell: ({ row }: { row: Row<SC> }) => (row.original as any).custom_command ?? "-",
+    },
+    {
+      accessorKey: "started_at",
+      header: "Started",
+      cell: ({ row }: { row: Row<SC> }) =>
+        (row.original as any).started_at ? formatDateTime((row.original as any).started_at) : "-",
+    },
+    {
+      accessorKey: "finished_at",
+      header: "Finished",
+      cell: ({ row }: { row: Row<SC> }) =>
+        (row.original as any).finished_at ? formatDateTime((row.original as any).finished_at) : "-",
+    },
+    {
+      accessorKey: "created_at",
+      header: "Created At",
+      cell: ({ row }: { row: Row<SC> }) =>
+        (row.original as any).created_at ? formatDateTime((row.original as any).created_at) : "-",
+    },
+    {
+      accessorKey: "updated_at",
+      header: "Updated At",
+      cell: ({ row }: { row: Row<SC> }) =>
+        (row.original as any).updated_at ? formatDateTime((row.original as any).updated_at) : "-",
+    },
+    {
+      accessorKey: "server_template",
+      header: "Server Template",
+      cell: ({ row }: { row: Row<SC> }) =>
+        hasField(row.original, "server_template") && (row.original as any).server_template
+          ? `${(row.original as any).server_template.template?.name ?? "-"} (#${
+              (row.original as any).server_template.id
+            })`
+          : "-",
+    },
+    {
+      accessorKey: "created_by_user",
+      header: "Created By",
+      cell: ({ row }: { row: Row<SC> }) =>
+        (row.original as any).created_by_user?.username ?? "-",
+    },
+    {
+      accessorKey: "updated_by_user",
+      header: "Updated By",
+      cell: ({ row }: { row: Row<SC> }) =>
+        (row.original as any).updated_by_user?.username ?? "-",
+    },
+    {
       id: "actions",
       header: "Actions",
       cell: ({ row }: { row: Row<SC> }) => {
         const { openEditServerConfigurationModal, openDeleteServerConfigurationModal } = useStore();
         return (
           <div className="flex gap-2">
+            <Link href={`/server-configurations/${row.original.id}`}>
+              <Button size="icon" variant="secondary">
+                <Eye className="w-4 h-4" />
+              </Button>
+            </Link>
             <Button
               size="icon"
               variant="outline"

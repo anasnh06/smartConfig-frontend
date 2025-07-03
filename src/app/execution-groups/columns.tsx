@@ -58,7 +58,7 @@ export const ExecutionGroupColumns: ColumnDef<ExecutionGroup>[] = [
   },
   {
     id: "server_configurations_count",
-    header: "Server Configuration",
+    header: "Server/Configuration",
     cell: ({ row }) => (
           <span>
               {row.original.server_configurations ? row.original.server_configurations.length : 0}

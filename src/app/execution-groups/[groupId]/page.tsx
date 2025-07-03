@@ -91,16 +91,27 @@ export default function ExecutionGroupDetailPage() {
 
       {group ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white border rounded-lg shadow p-4 text-sm">
-          <div><strong>Status:</strong> {group.status ?? "-"}</div>
-          <div><strong>Playbook path:</strong> {group.playbook_path ?? "-"}</div>
-          <div><strong>Inventory path:</strong> {group.inventory_path ?? "-"}</div>
-          <div><strong>Started at:</strong> {group.started_at ?? "-"}</div>
-          <div><strong>Finished at:</strong> {group.finished_at ?? "-"}</div>
-          <div><strong>Created at:</strong> {group.created_at}</div>
-          <div><strong>Updated at:</strong> {group.updated_at ?? "-"}</div>
-          <div><strong>Created by:</strong> {group.created_by_user?.username ?? "-"}</div>
-          <div><strong>Updated by:</strong> {group.updated_by_user?.username ?? "-"}</div>
-        </div>
+      {/* Ligne 1 : Status */}
+      <div><strong>Status:</strong> {group.status ?? "-"}</div>
+      <div></div> {/* Espace d'alignement */}
+
+      {/* Ligne 2 : Playbook / Inventory paths */}
+      <div><strong>Playbook path:</strong> {group.playbook_path ?? "-"}</div>
+      <div><strong>Inventory path:</strong> {group.inventory_path ?? "-"}</div>
+
+      {/* Ligne 3 : Started / Finished */}
+      <div><strong>Started at:</strong> {group.started_at ?? "-"}</div>
+      <div><strong>Finished at:</strong> {group.finished_at ?? "-"}</div>
+
+      {/* Ligne 4 : Created at / Updated at */}
+      <div><strong>Created at:</strong> {group.created_at}</div>
+      <div><strong>Updated at:</strong> {group.updated_at ?? "-"}</div>
+
+      {/* Ligne 5 : Created by / Updated by */}
+      <div><strong>Created by:</strong> {group.created_by_user?.username ?? "-"}</div>
+      <div><strong>Updated by:</strong> {group.updated_by_user?.username ?? "-"}</div>
+    </div>
+
       ) : (
         <p className="text-gray-500">Loading execution group details...</p>
       )}

@@ -62,72 +62,30 @@ export default function ServerConfigurationDetailPage() {
 
       {serverConfiguration ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white border rounded-lg shadow p-4 text-sm">
-          <div>
-            <strong>Status:</strong> {serverConfiguration.status ?? "-"}
-          </div>
-          <div>
-            <strong>Return Code:</strong>{" "}
-            {serverConfiguration.return_code !== undefined
-              ? serverConfiguration.return_code
-              : "-"}
-          </div>
-          <div>
-            <strong>Started At:</strong> {serverConfiguration.started_at ?? "-"}
-          </div>
-          <div>
-            <strong>Finished At:</strong> {serverConfiguration.finished_at ?? "-"}
-          </div>
-          <div>
-            <strong>Source:</strong> {serverConfiguration.source ?? "-"}
-          </div>
-          <div>
-            <strong>Custom Command:</strong> {serverConfiguration.custom_command ?? "-"}
-          </div>
-          <div>
-            <strong>Log Path:</strong> {serverConfiguration.log_path ?? "-"}
-          </div>
-          <div>
-            <strong>Stdout:</strong>
-            <pre className="whitespace-pre-wrap break-all">
-              {serverConfiguration.stdout ?? "-"}
-            </pre>
-          </div>
-          <div>
-            <strong>Stderr:</strong>
-            <pre className="whitespace-pre-wrap break-all">
-              {serverConfiguration.stderr ?? "-"}
-            </pre>
-          </div>
-          <div>
-            <strong>Created At:</strong> {serverConfiguration.created_at}
-          </div>
-          <div>
-            <strong>Updated At:</strong> {serverConfiguration.updated_at ?? "-"}
-          </div>
-          <div>
-            <strong>Created By:</strong>{" "}
-            {serverConfiguration.created_by_user?.username ?? "-"}
-          </div>
-          <div>
-            <strong>Updated By:</strong>{" "}
-            {serverConfiguration.updated_by_user?.username ?? "-"}
-          </div>
+
+          {/* Ligne 1 : Status, Source */}
+          <div><strong>Status:</strong> {serverConfiguration.status ?? "-"}</div>
+          <div><strong>Source:</strong> {serverConfiguration.source ?? "-"}</div>
+
+          {/* Ligne 9 : Server, Execution Group */}
           <div>
             <strong>Server:</strong>{" "}
             {serverConfiguration.server
-              ? `${serverConfiguration.server.name} (#${serverConfiguration.server.id})`
+              ? `${serverConfiguration.server.name} (${serverConfiguration.server.ip_address ?? "-"})`
               : "-"}
           </div>
           <div>
             <strong>Execution Group:</strong>{" "}
             {serverConfiguration.execution_group
-              ? `${serverConfiguration.execution_group.name} (#${serverConfiguration.execution_group.id})`
+              ? `${serverConfiguration.execution_group.name}`
               : "-"}
           </div>
+
+          {/* Ligne 10 : Configuration, Server Template */}
           <div>
             <strong>Configuration:</strong>{" "}
             {serverConfiguration.configuration
-              ? `${serverConfiguration.configuration.name} (#${serverConfiguration.configuration.id})`
+              ? `${serverConfiguration.configuration.name}`
               : "-"}
           </div>
           <div>
@@ -136,6 +94,45 @@ export default function ServerConfigurationDetailPage() {
               ? `${serverConfiguration.server_template.template.name} (#${serverConfiguration.server_template.id})`
               : "-"}
           </div>
+
+          {/* Ligne 2 : Command, Return Code */}
+          <div><strong>Custom Command:</strong> {serverConfiguration.custom_command ?? "-"}</div>
+          <div><strong>Return Code:</strong> {serverConfiguration.return_code ?? "-"}</div>
+
+          {/* Ligne 3 : Log Path */}
+          <div className="col-span-2">
+            <strong>Log Path:</strong> {serverConfiguration.log_path ?? "-"}
+          </div>
+
+          {/* Ligne 4 : Stdout */}
+          <div className="col-span-2">
+            <strong>Stdout:</strong>
+            <pre className="whitespace-pre-wrap break-all bg-gray-50 p-2 rounded border">
+              {serverConfiguration.stdout ?? "-"}
+            </pre>
+          </div>
+
+          {/* Ligne 5 : Stderr */}
+          <div className="col-span-2">
+            <strong>Stderr:</strong>
+            <pre className="whitespace-pre-wrap break-all bg-gray-50 p-2 rounded border">
+              {serverConfiguration.stderr ?? "-"}
+            </pre>
+          </div>
+
+          {/* Ligne 6 : Started At, Finished At */}
+          <div><strong>Started At:</strong> {serverConfiguration.started_at ?? "-"}</div>
+          <div><strong>Finished At:</strong> {serverConfiguration.finished_at ?? "-"}</div>
+
+          {/* Ligne 7 : Created At, Updated At */}
+          <div><strong>Created At:</strong> {serverConfiguration.created_at}</div>
+          <div><strong>Updated At:</strong> {serverConfiguration.updated_at ?? "-"}</div>
+
+          {/* Ligne 8 : Created By, Updated By */}
+          <div><strong>Created By:</strong> {serverConfiguration.created_by_user?.username ?? "-"}</div>
+          <div><strong>Updated By:</strong> {serverConfiguration.updated_by_user?.username ?? "-"}</div>
+
+          
         </div>
       ) : (
         <p className="text-gray-500">Loading server configuration details...</p>

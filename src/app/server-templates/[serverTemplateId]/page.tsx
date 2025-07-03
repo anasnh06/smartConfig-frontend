@@ -15,13 +15,16 @@ import { EditServerTemplateModal } from "@/components/server-templates/edit-serv
 import { DeleteServerTemplateModal } from "@/components/server-templates/delete-server-template-modal";
 
 import { getServerConfigurationColumns } from "@/app/server-configurations/columns";
+import { CreateServerConfigurationModal } from "@/components/server-configurations/create-server-configuration-modal";
+import { EditServerConfigurationModal } from "@/components/server-configurations/edit-server-configuration-modal";
+import { DeleteServerConfigurationModal } from "@/components/server-configurations/delete-server-configuration-modal";
 
 export default function ServerTemplateDetailPage() {
   const { serverTemplateId } = useParams<{ serverTemplateId: string }>();
   const router = useRouter();
 
   const { serverTemplates, fetchServerTemplates, loading } = useServerTemplatesStore();
-  const { openEditServerTemplateModal, openDeleteServerTemplateModal } = useStore();
+  const { openEditServerTemplateModal, openDeleteServerTemplateModal, isEditServerConfigurationModalOpen, isDeleteServerConfigurationModalOpen } = useStore();
 
   const serverTemplate = serverTemplates.find(
     (st) => st.id === Number(serverTemplateId)
@@ -30,6 +33,13 @@ export default function ServerTemplateDetailPage() {
   useEffect(() => {
     fetchServerTemplates();
   }, [fetchServerTemplates]);
+
+  // Rafraîchir après édition ou suppression d'une server configuration
+  useEffect(() => {
+    if (!isEditServerConfigurationModalOpen && !isDeleteServerConfigurationModalOpen) {
+      fetchServerTemplates();
+    }
+  }, [isEditServerConfigurationModalOpen, isDeleteServerConfigurationModalOpen, fetchServerTemplates]);
 
   return (
     <div className="space-y-6 p-6">
@@ -124,6 +134,9 @@ export default function ServerTemplateDetailPage() {
       {/* Modals */}
       <EditServerTemplateModal />
       <DeleteServerTemplateModal />
+      <CreateServerConfigurationModal />
+      <EditServerConfigurationModal />
+      <DeleteServerConfigurationModal />
     </div>
   );
 }
