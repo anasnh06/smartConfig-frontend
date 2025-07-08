@@ -9,16 +9,19 @@ import { Button } from "@/components/ui/button"
 
 import { useExecutionsStore } from "@/lib/store/executions"
 import { useStore } from "@/lib/store"
+import { useStepperStore } from "@/lib/store/stepper"
 
 import { ExecutionColumns } from "./columns"
 
 import { CreateExecutionModal } from "@/components/executions/create-execution-modal"
 import { EditExecutionModal } from "@/components/executions/edit-execution-modal"
 import { DeleteExecutionModal } from "@/components/executions/delete-execution-modal"
+import { StepperExecutionModal } from "@/components/executions/stepper/stepper-execution-modal"
 
 export default function ExecutionsPage() {
   const { executions, fetchExecutions, loading } = useExecutionsStore()
   const { openCreateExecutionModal } = useStore()
+  const { openStepperExecutionModal } = useStepperStore()
   const [search, setSearch] = useState("")
 
   useEffect(() => {
@@ -40,23 +43,23 @@ export default function ExecutionsPage() {
         title="Executions"
         description="List of all executions with their status and timestamps."
         icon={<PlayCircle className="h-6 w-6" />}
-        action={{
-          label: "Add Execution",
-          onClick: openCreateExecutionModal,
-        }}
       />
 
+      {/* Boutons d'action */}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={openCreateExecutionModal}>➕ Add Execution</Button>
+        <Button onClick={openStepperExecutionModal}>🚀 Run via Stepper</Button>
+      </div>
+
       {/* Search bar */}
-      <div className="mt-2 w-full sm:w-72">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search executions by title..."
-            className="pl-3 pr-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+      <div className="mt-4 w-full sm:w-72">
+        <input
+          type="text"
+          placeholder="Search executions by title..."
+          className="pl-3 pr-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       {filteredExecutions.length === 0 ? (
@@ -88,9 +91,13 @@ export default function ExecutionsPage() {
         />
       )}
 
+      {/* Modales CRUD classiques */}
       <CreateExecutionModal />
       <EditExecutionModal />
       <DeleteExecutionModal />
+
+      {/* Stepper modal */}
+      <StepperExecutionModal />
     </div>
   )
 }

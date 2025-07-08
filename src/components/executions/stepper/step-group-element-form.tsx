@@ -21,9 +21,7 @@ export function StepGroupElementForm() {
             <Label>Type</Label>
             <Select
               value={elements[index]?.type || ""}
-              onValueChange={(value) => {
-                setValue(`elements.${index}.type`, value)
-              }}
+              onValueChange={(value) => setValue(`elements.${index}.type`, value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Type" />
@@ -58,37 +56,20 @@ export function StepGroupElementForm() {
             className="col-span-1"
           />
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => remove(index)}
-            className="col-span-1"
-          >
+          <Button type="button" variant="outline" onClick={() => remove(index)} className="col-span-1">
             Supprimer
           </Button>
         </div>
       ))}
 
       <div className="flex gap-2">
-        <Button
-          type="button"
-          onClick={() => append({ type: "template" })}
-          variant="secondary"
-        >
+        <Button type="button" onClick={() => append({ type: "template" })} variant="secondary">
           + Template
         </Button>
-        <Button
-          type="button"
-          onClick={() => append({ type: "configuration" })}
-          variant="secondary"
-        >
+        <Button type="button" onClick={() => append({ type: "configuration" })} variant="secondary">
           + Configuration
         </Button>
-        <Button
-          type="button"
-          onClick={() => append({ type: "manual", command: "" })}
-          variant="secondary"
-        >
+        <Button type="button" onClick={() => append({ type: "manual", command: "" })} variant="secondary">
           + Commande manuelle
         </Button>
       </div>

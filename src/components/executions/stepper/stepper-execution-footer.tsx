@@ -1,5 +1,6 @@
 "use client"
 
+import { PlayCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface StepperExecutionFooterProps {
@@ -7,6 +8,7 @@ interface StepperExecutionFooterProps {
   totalSteps: number
   onNext: () => void
   onPrevious: () => void
+  onLaunch: () => void
   isNextDisabled?: boolean
   isLaunching?: boolean
 }
@@ -16,6 +18,7 @@ export function StepperExecutionFooter({
   totalSteps,
   onNext,
   onPrevious,
+  onLaunch,
   isNextDisabled = false,
   isLaunching = false,
 }: StepperExecutionFooterProps) {
@@ -30,15 +33,26 @@ export function StepperExecutionFooter({
       </Button>
 
       {currentStep < totalSteps - 1 ? (
-        <Button onClick={onNext} disabled={isNextDisabled || isLaunching}>
-          Suivant
-        </Button>
-      ) : (
         <Button
           onClick={onNext}
           disabled={isNextDisabled || isLaunching}
         >
-          {isLaunching ? "Lancement..." : "Lancer l'exécution"}
+          Suivant
+        </Button>
+      ) : (
+        <Button
+          onClick={onLaunch}
+          disabled={isNextDisabled || isLaunching}
+          className="flex gap-2 items-center"
+        >
+          {isLaunching ? (
+            "Lancement en cours..."
+          ) : (
+            <>
+              <PlayCircle className="h-5 w-5" />
+              Lancer l'exécution
+            </>
+          )}
         </Button>
       )}
     </div>

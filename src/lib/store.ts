@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import type {
   User,
   Server,
@@ -82,9 +83,9 @@ interface ModalState {
   isReplayServerConfigurationModalOpen: boolean
 
   // ==== AJOUTÉ POUR LE STEPPER ====
-  draftExecutionGroups: ExecutionGroupDraft[]
-  isStepperExecutionModalOpen: boolean
-  selectedDraftGroupIndex: number | null
+  // draftExecutionGroups: ExecutionGroupDraft[]
+  // isStepperExecutionModalOpen: boolean
+  // selectedDraftGroupIndex: number | null
 
 
   // États de sélection
@@ -103,20 +104,20 @@ interface ModalState {
   selectedServerTemplate: ServerTemplate | null
 }
 
-export interface ExecutionElement {
-  type: "template" | "configuration" | "manual"
-  id?: number
-  command?: string
-  name?: string
-  description?: string
-  order?: number
-}
+// export interface ExecutionElement {
+//   type: "template" | "configuration" | "manual"
+//   id?: number
+//   command?: string
+//   name?: string
+//   description?: string
+//   order?: number
+// }
 
-export interface ExecutionGroupDraft {
-  servers: number[]
-  elements: ExecutionElement[]
-  comment?: string
-}
+// export interface ExecutionGroupDraft {
+//   servers: number[]
+//   elements: ExecutionElement[]
+//   comment?: string
+// }
 
 interface ModalActions {
   openCreateUserModal: () => void
@@ -240,13 +241,16 @@ interface ModalActions {
   closeReplayServerConfigurationModal: () => void
 
   // ==== AJOUTÉ POUR LE STEPPER ====
-  openStepperExecutionModal: () => void
-  closeStepperExecutionModal: () => void
-  addDraftGroup: (group: ExecutionGroupDraft) => void
-  openEditDraftExecutionGroupModal: (index: number) => void;
-  removeDraftGroup: (index: number) => void
-  clearDraftGroups: () => void
-  setSelectedDraftGroupIndex: (index: number | null) => void
+  // openStepperExecutionModal: () => void
+  // closeStepperExecutionModal: () => void
+  // addDraftGroup: (group: ExecutionGroupDraft) => void
+  // openEditDraftExecutionGroupModal: (index: number) => void;
+  // removeDraftGroup: (index: number) => void
+  // clearDraftGroups: () => void
+  // setSelectedDraftGroupIndex: (index: number | null) => void
+  // updateDraftGroup: (index: number, group: ExecutionGroupDraft) => void;
+  clearSelectedExecution: () => void;
+
   
 }
 
@@ -452,21 +456,27 @@ export const useStore = create<Store>((set) => ({
 
 
    // ==== STEPPER EXECUTION CUSTOM ====
-  draftExecutionGroups: [],
-  isStepperExecutionModalOpen: false,
-  openStepperExecutionModal: () => set({ isStepperExecutionModalOpen: true }),
-  closeStepperExecutionModal: () => set({ isStepperExecutionModalOpen: false }),
-  addDraftGroup: (group) => set((state) => ({ draftExecutionGroups: [...state.draftExecutionGroups, group] })),
-  openEditDraftExecutionGroupModal: (index) => set({
-  isEditExecutionGroupModalOpen: true,
-  selectedDraftGroupIndex: index,
-  }),
-  removeDraftGroup: (index) =>
-    set((state) => ({ draftExecutionGroups: state.draftExecutionGroups.filter((_, i) => i !== index) })),
-  clearDraftGroups: () => set({ draftExecutionGroups: [] }),
-  selectedDraftGroupIndex: null,
-  setSelectedDraftGroupIndex: (index) => set({ selectedDraftGroupIndex: index }),
+  // draftExecutionGroups: [],
+  // isStepperExecutionModalOpen: false,
+  // openStepperExecutionModal: () => set({ isStepperExecutionModalOpen: true }),
+  // closeStepperExecutionModal: () => set({ isStepperExecutionModalOpen: false }),
+  // addDraftGroup: (group) => set((state) => ({ draftExecutionGroups: [...state.draftExecutionGroups, group] })),
+  // openEditDraftExecutionGroupModal: (index) => set({
+  // isEditExecutionGroupModalOpen: true,
+  // selectedDraftGroupIndex: index,
+  // }),
+  // removeDraftGroup: (index) =>
+  //   set((state) => ({ draftExecutionGroups: state.draftExecutionGroups.filter((_, i) => i !== index) })),
+  // clearDraftGroups: () => set({ draftExecutionGroups: [] }),
+  // selectedDraftGroupIndex: null,
+  // setSelectedDraftGroupIndex: (index) => set({ selectedDraftGroupIndex: index }),
+  // updateDraftGroup: (index, group) => set((state) => {
+  // const updatedGroups = [...state.draftExecutionGroups]
+  // updatedGroups[index] = group
+  // return { draftExecutionGroups: updatedGroups }
+  // }),
 
+  clearSelectedExecution: () => set({ selectedExecution: null }),
   
 }))
 

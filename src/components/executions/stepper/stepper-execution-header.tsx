@@ -15,10 +15,11 @@ export function StepperExecutionHeader() {
         <Input
           id="execution-title"
           placeholder="Ex: Déploiement cluster QA"
+          autoFocus
           value={selectedExecution?.title ?? ""}
           onChange={(e) =>
             setSelectedExecution({
-              ...selectedExecution,
+              ...(selectedExecution ?? {}),
               title: e.target.value,
             })
           }
