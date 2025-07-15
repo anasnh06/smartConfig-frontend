@@ -28,8 +28,13 @@ export default function ExecutionsPage() {
     fetchExecutions()
   }, [fetchExecutions])
 
+  // Trie par date de création décroissante (dernier entré en premier)
+  const sortedExecutions = [...executions].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
   // Simple search by title
-  const filteredExecutions = executions.filter((execution) => {
+  const filteredExecutions = sortedExecutions.filter((execution) => {
     const lowerSearch = search.trim().toLowerCase()
     return (
       !lowerSearch ||

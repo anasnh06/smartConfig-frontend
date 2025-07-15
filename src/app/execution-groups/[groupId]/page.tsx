@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Layers, Server, Link } from "lucide-react"
+import { Layers, Server, Link, ArrowLeft } from "lucide-react"
 
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
@@ -49,6 +49,9 @@ export default function ExecutionGroupDetailPage() {
     uniqueServerTemplateIds.includes(st.id)
   )
 
+  // Récupère l'id de l'exécution parente si possible
+  const parentExecutionId = group?.execution?.id
+
   useEffect(() => {
     if (group) {
       setSelectedExecutionGroup(group)
@@ -63,31 +66,46 @@ export default function ExecutionGroupDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeader
-        title={group ? group.name ?? `Group #${group.id}` : "Loading..."}
-        description="Details and linked server configurations / templates."
-        icon={<Layers className="h-6 w-6" />}
-        action={
-          group && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openEditExecutionGroupModal(group)}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => openDeleteExecutionGroupModal(group)}
-              >
-                Delete
-              </Button>
-            </div>
-          )
-        }
-      />
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            if (parentExecutionId) {
+              router.push(`/executions/${parentExecutionId}`)
+            } else {
+              router.push("/executions")
+            }
+          }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <PageHeader
+          title={group ? group.name ?? `Group #${group.id}` : "Loading..."}
+          description="Details and linked server configurations / templates."
+          icon={<Layers className="h-6 w-6" />}
+          action={
+            group && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditExecutionGroupModal(group)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => openDeleteExecutionGroupModal(group)}
+                >
+                  Delete
+                </Button>
+              </div>
+            )
+          }
+        />
+      </div>
 
       {group ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white border rounded-lg shadow p-4 text-sm">

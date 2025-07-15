@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
+import { StatusBadge } from "@/components/ui/status-badge"
 
 export const ExecutionGroupColumns: ColumnDef<ExecutionGroup>[] = [
   {
@@ -19,10 +20,10 @@ export const ExecutionGroupColumns: ColumnDef<ExecutionGroup>[] = [
     cell: ({ row }) => row.original.name ?? "-",
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => row.original.status ?? "-",
-  },
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
+    },
   {
     accessorKey: "started_at",
     header: "Started At",

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Layers } from "lucide-react";
+import { Layers, ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -30,35 +30,40 @@ export default function ServerConfigurationDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeader
-        title={
-          serverConfiguration
-            ? `Server Configuration #${serverConfiguration.id}`
-            : "Loading..."
-        }
-        description="Detailed information and linked entities."
-        icon={<Layers className="h-6 w-6" />}
-        action={
-          serverConfiguration && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openEditServerConfigurationModal(serverConfiguration)}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => openDeleteServerConfigurationModal(serverConfiguration)}
-              >
-                Delete
-              </Button>
-            </div>
-          )
-        }
-      />
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <PageHeader
+          title={
+            serverConfiguration
+              ? `Server Configuration #${serverConfiguration.id}`
+              : "Loading..."
+          }
+          description="Detailed information and linked entities."
+          icon={<Layers className="h-6 w-6" />}
+          action={
+            serverConfiguration && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditServerConfigurationModal(serverConfiguration)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => openDeleteServerConfigurationModal(serverConfiguration)}
+                >
+                  Delete
+                </Button>
+              </div>
+            )
+          }
+        />
+      </div>
 
       {serverConfiguration ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white border rounded-lg shadow p-4 text-sm">

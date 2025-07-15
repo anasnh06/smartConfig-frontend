@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/utils"
 import Link from "next/link"
 import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,8 +38,13 @@ export const ExecutionColumns: ColumnDef<Execution>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => row.original.status ?? "-",
+    cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
   },
+  // {
+  //       accessorKey: "status",
+  //       header: "Status",
+  //       cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
+  //     },
   {
     accessorKey: "execution_groups",
     header: "Groups",
