@@ -1,22 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useStepperStore } from "@/lib/store/stepper"
 import { useStore } from "@/lib/store"
 import { useExecutionRunnersStore } from "@/lib/store/execution_runners"
 import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { StepperExecutionHeader } from "./stepper-execution-header"
-import { StepperExecutionGroups } from "./stepper-execution-groups"
-import { StepperExecutionReview } from "./stepper-execution-review"
+
 import { StepperExecutionFooter } from "./stepper-execution-footer"
 import { CreateStepperGroupModal } from "./create-stepper-group-modal"
 import { EditStepperGroupModal } from "./edit-stepper-group-modal"
 import { ExecutionTrackerModal } from "@/components/executions/execution-tracker-modal"
+import { StepperExecutionGroupsAndReview } from "./stepper-execution-groups-and-review"
 
 export function StepperExecutionModal() {
   const { isStepperExecutionModalOpen, closeStepperExecutionModal, draftExecutionGroups, clearDraftGroups } = useStepperStore()
-  const { selectedExecution, clearSelectedExecution } = useStore()
+  const { selectedExecution, clearSelectedExecution, setSelectedExecution } = useStore()
   const { toast } = useToast()
   const launchFullExecution = useExecutionRunnersStore((s) => s.launchFullExecution)
 
@@ -25,7 +25,7 @@ export function StepperExecutionModal() {
   const [executionId, setExecutionId] = useState<number | null>(null)
   const [isTrackerOpen, setIsTrackerOpen] = useState(false)
 
-  const next = () => setStep((s) => Math.min(s + 1, 2))
+  const next = () => setStep((s) => Math.min(s + 1, 1)) // Only 2 steps: 0 and 1
   const back = () => setStep((s) => Math.max(s - 1, 0))
 
   const handleLaunchExecution = async () => {
@@ -82,23 +82,32 @@ export function StepperExecutionModal() {
     }
   }
 
+  // Reset selectedExecution.title à chaque ouverture du modal stepper
+  useEffect(() => {
+    if (isStepperExecutionModalOpen) {
+      setSelectedExecution({ title: "" })
+    }
+  }, [isStepperExecutionModalOpen, setSelectedExecution])
+
   return (
     <>
       <Dialog open={isStepperExecutionModalOpen} onOpenChange={closeStepperExecutionModal}>
         <DialogContent className="max-w-4xl w-full max-h-[95vh] overflow-y-auto">
           <div className="space-y-6">
             {step === 0 && <StepperExecutionHeader />}
-            {step === 1 && <StepperExecutionGroups />}
-            {step === 2 && <StepperExecutionReview />}
+            {step === 1 && (
+              <StepperExecutionGroupsAndReview
+                onLaunch={handleLaunchExecution}
+                isLaunching={isLaunching}
+              />
+            )}
 
             <StepperExecutionFooter
               currentStep={step}
-              totalSteps={3}
+              totalSteps={2} // Only 2 steps now
               onNext={next}
               onPrevious={back}
-              onLaunch={handleLaunchExecution}
-              isNextDisabled={false}
-              isLaunching={isLaunching}
+              // Remove onLaunch, isLaunching, isNextDisabled from footer
             />
           </div>
 

@@ -240,15 +240,7 @@ interface ModalActions {
   openReplayServerConfigurationModal: (serverConfiguration: ServerConfiguration) => void
   closeReplayServerConfigurationModal: () => void
 
-  // ==== AJOUTÉ POUR LE STEPPER ====
-  // openStepperExecutionModal: () => void
-  // closeStepperExecutionModal: () => void
-  // addDraftGroup: (group: ExecutionGroupDraft) => void
-  // openEditDraftExecutionGroupModal: (index: number) => void;
-  // removeDraftGroup: (index: number) => void
-  // clearDraftGroups: () => void
-  // setSelectedDraftGroupIndex: (index: number | null) => void
-  // updateDraftGroup: (index: number, group: ExecutionGroupDraft) => void;
+ 
   clearSelectedExecution: () => void;
 
   
@@ -455,26 +447,7 @@ export const useStore = create<Store>((set) => ({
   closeRunTemplateModal: () => set({ isRunTemplateModalOpen: false, selectedTemplate: null }),
 
 
-   // ==== STEPPER EXECUTION CUSTOM ====
-  // draftExecutionGroups: [],
-  // isStepperExecutionModalOpen: false,
-  // openStepperExecutionModal: () => set({ isStepperExecutionModalOpen: true }),
-  // closeStepperExecutionModal: () => set({ isStepperExecutionModalOpen: false }),
-  // addDraftGroup: (group) => set((state) => ({ draftExecutionGroups: [...state.draftExecutionGroups, group] })),
-  // openEditDraftExecutionGroupModal: (index) => set({
-  // isEditExecutionGroupModalOpen: true,
-  // selectedDraftGroupIndex: index,
-  // }),
-  // removeDraftGroup: (index) =>
-  //   set((state) => ({ draftExecutionGroups: state.draftExecutionGroups.filter((_, i) => i !== index) })),
-  // clearDraftGroups: () => set({ draftExecutionGroups: [] }),
-  // selectedDraftGroupIndex: null,
-  // setSelectedDraftGroupIndex: (index) => set({ selectedDraftGroupIndex: index }),
-  // updateDraftGroup: (index, group) => set((state) => {
-  // const updatedGroups = [...state.draftExecutionGroups]
-  // updatedGroups[index] = group
-  // return { draftExecutionGroups: updatedGroups }
-  // }),
+   
 
   clearSelectedExecution: () => set({ selectedExecution: null }),
   
