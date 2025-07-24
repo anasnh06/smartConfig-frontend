@@ -20,6 +20,8 @@ export type ServerTemplateShortForTemplate = {
 export type ServerTemplate = {
   id: number
   status?: string
+  started_at?: string
+  finished_at?: string
   created_at?: string
   updated_at?: string
   created_by_user?: UserShort

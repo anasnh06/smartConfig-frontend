@@ -17,6 +17,7 @@ interface ServerConfigurationsStore {
   addServerConfiguration: (data: CreateServerConfigurationData) => Promise<void>
   updateServerConfiguration: (id: number, data: UpdateServerConfigurationData) => Promise<void>
   removeServerConfiguration: (id: number) => Promise<void>
+  fetchServerConfigurationsByConfigId: (configId: number) => Promise<ServerConfiguration[]>
 }
 
 export const useServerConfigurationsStore = create<ServerConfigurationsStore>((set, get) => ({
@@ -72,6 +73,26 @@ export const useServerConfigurationsStore = create<ServerConfigurationsStore>((s
       })
     } catch (error: any) {
       set({ error: error.message })
+    }
+  },
+
+  fetchServerConfigurationsByConfigId: async (configId) => {
+    set({ loading: true, error: null });
+    try {
+      // Suppose que l'API accepte le filtre ?configuration_id=...
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL as string}/api/v1/server-configurations/?configuration_id=${configId}`,
+        { credentials: "include" }
+      );
+      if (!res.ok) throw new Error("❌ Failed to fetch server configurations for configuration");
+      const serverConfigurations = await res.json();
+      set({ serverConfigurations });
+      return serverConfigurations;
+    } catch (error: any) {
+      set({ error: error.message });
+      return [];
+    } finally {
+      set({ loading: false });
     }
   },
 }))

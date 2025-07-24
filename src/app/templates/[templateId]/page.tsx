@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DetailSection } from "@/components/ui/detail-section";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { EditTemplateModal } from "@/components/templates/edit-template-modal";
 import { DeleteTemplateModal } from "@/components/templates/delete-template-modal";
@@ -20,6 +21,7 @@ import { DeleteTemplateConfigurationModal } from "@/components/templates/delete-
 
 import { useStore } from "@/lib/store";
 import { getTemplate } from "@/lib/api/template";
+import { useServerTemplatesStore } from "@/lib/store/server_templates";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TemplateConfiguration } from "@/types/entities";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,8 +31,10 @@ export default function TemplateDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const store = useStore();
+  const { fetchServerTemplatesByTemplateId, serverTemplates } = useServerTemplatesStore();
 
   const [template, setTemplate] = useState<any | null>(null);
+  const [serverTemplatesLoading, setServerTemplatesLoading] = useState(true);
 
   const fetchTemplate = async () => {
     try {
@@ -43,6 +47,9 @@ export default function TemplateDetailPage() {
 
   useEffect(() => {
     fetchTemplate();
+    // Charger les server_templates liés à ce template
+    setServerTemplatesLoading(true);
+    fetchServerTemplatesByTemplateId(Number(templateId)).finally(() => setServerTemplatesLoading(false));
   }, [templateId]);
 
   const columns: ColumnDef<TemplateConfiguration>[] = [
@@ -104,6 +111,29 @@ export default function TemplateDetailPage() {
       },
       enableSorting: false,
       enableHiding: false,
+    },
+  ];
+
+  // Colonnes pour le tableau des serveurs associés au template
+  const serverTemplateColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "server.name",
+      header: "Server Name",
+      cell: ({ row }) => (
+        <Link href={`/servers/${row.original.server.id}`} className="font-medium hover:underline text-blue-700">
+          {row.original.server.name}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "server.ip_address",
+      header: "IP Address",
+      cell: ({ row }) => row.original.server.ip_address,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
     },
   ];
 
@@ -255,32 +285,13 @@ export default function TemplateDetailPage() {
             <CardTitle className="text-gray-900 text-lg">Associated Servers</CardTitle>
           </CardHeader>
           <CardContent>
-            {template.servers && template.servers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm border border-gray-100 rounded-lg">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">Server Name</th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">IP Address</th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">Environment</th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">Project</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {template.servers.map((server: any) => (
-                      <tr key={server.id} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-2">
-                          <Link href={`/servers/${server.id}`} className="hover:underline text-blue-700 font-medium">
-                            {server.name}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-2">{server.ip_address}</td>
-                        <td className="px-4 py-2">{server.environment?.name || <span className="text-gray-400 italic">—</span>}</td>
-                        <td className="px-4 py-2">{server.project?.name || <span className="text-gray-400 italic">—</span>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {serverTemplatesLoading ? (
+              <div className="flex justify-center items-center py-6">
+                <p className="text-gray-400 text-center">Loading...</p>
+              </div>
+            ) : serverTemplates && serverTemplates.length > 0 ? (
+              <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-2">
+                <DataTable columns={serverTemplateColumns} data={serverTemplates} />
               </div>
             ) : (
               <div className="flex justify-center items-center py-6">

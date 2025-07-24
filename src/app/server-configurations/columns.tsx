@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 import { Eye, Edit, Trash } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Context = "group" | "server" | "configuration";
 
@@ -60,11 +61,7 @@ export function getServerConfigurationColumns(context: Context): ColumnDef<SC>[]
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }: { row: Row<SC> }) => (
-        <Badge variant="outline" className="capitalize">
-          {row.original.status ?? "unknown"}
-        </Badge>
-      ),
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
     },
     {
       accessorKey: "source",

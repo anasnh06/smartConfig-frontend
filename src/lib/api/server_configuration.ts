@@ -72,3 +72,11 @@ export async function deleteServerConfiguration(id: number): Promise<void> {
     throw new Error(error.detail || "❌ Failed to delete server configuration")
   }
 }
+
+export async function getServerConfigurationsByConfigId(configId: number): Promise<ServerConfiguration[]> {
+  const res = await fetch(`${API_URL}/api/v1/server-configurations/?configuration_id=${configId}`, {
+    credentials: "include",
+  })
+  if (!res.ok) throw new Error("❌ Failed to fetch server configurations for configuration")
+  return res.json()
+}

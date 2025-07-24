@@ -42,7 +42,7 @@ export async function createRole(data: { name: string; description: string }): P
 
 export async function updateRole(id: number, data: { name: string; description: string }): Promise<Role> {
   const res = await fetch(`${API_URL}/api/v1/roles/${id}`, {
-    method: "PATCH",
+    method: "PATCH",  
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

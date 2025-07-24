@@ -22,7 +22,7 @@ import type { EnvironmentShort } from "@/types/entities/environment"
 
 export default function ServersPage() {
   const { openCreateServerModal } = useStore()
-  const { servers, fetchServers } = useServersStore()
+  const { servers, fetchServers, getServerSshStatus, serverStatus } = useServersStore()
   const { projects, fetchProjects } = useProjectsStore()
   const { environments, fetchEnvironments } = useEnvironmentsStore()
   const { roles, fetchRoles } = useRolesStore()
@@ -33,6 +33,7 @@ export default function ServersPage() {
   const [projectFilter, setProjectFilter] = useState<number | "">("")
   const [envFilter, setEnvFilter] = useState<number | "">("")
   const [roleFilter, setRoleFilter] = useState<number | "">("")
+  const [sshStatusFilter, setSshStatusFilter] = useState<"" | "online" | "offline">("")
   const [search, setSearch] = useState("")
 
   useEffect(() => {
@@ -43,7 +44,16 @@ export default function ServersPage() {
     fetchOperatingSystems()
   }, [])
 
-  // Filtrage côté client (supporte plusieurs rôles + recherche)
+  // Fetch SSH status for all servers when servers change
+  useEffect(() => {
+    servers.forEach(server => {
+      if (!serverStatus[server.id]) {
+        getServerSshStatus(server.id)
+      }
+    })
+  }, [servers, getServerSshStatus, serverStatus])
+
+  // Filtrage côté client (supporte plusieurs rôles + recherche + ssh status)
   const filteredServers = servers.filter((server) => {
     const matchOs =
       !osFilter ||
@@ -62,7 +72,12 @@ export default function ServersPage() {
       !lowerSearch ||
       (server.name && server.name.toLowerCase().includes(lowerSearch)) ||
       (server.ip_address && server.ip_address.toLowerCase().includes(lowerSearch))
-    return matchOs && matchProject && matchEnv && matchRole && matchSearch
+    // SSH status filter
+    const status = serverStatus[server.id] || "offline"
+    const matchSshStatus =
+      !sshStatusFilter || status === sshStatusFilter
+
+    return matchOs && matchProject && matchEnv && matchRole && matchSearch && matchSshStatus
   })
 
   return (
@@ -70,7 +85,7 @@ export default function ServersPage() {
       <PageHeader
         title="Servers"
         description="Manage your infrastructure servers"
-        icon={<Server className="h-6 w-6" />} // Ajout de l'icône Server avant le titre
+        icon={<Server className="h-6 w-6" />}
         action={{
           label: "Add Server",
           onClick: openCreateServerModal,
@@ -143,7 +158,6 @@ export default function ServersPage() {
           </select>
         </div>
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          {/* Utilise Tag (comme dans la sidebar) pour l'icône rôle */}
           <Tag className="text-gray-500 w-5 h-5" />
           <label className="block text-sm font-medium text-gray-700" htmlFor="role-filter">
             Role
@@ -162,6 +176,23 @@ export default function ServersPage() {
                 {role.name}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          {/* SSH Status Filter */}
+          <HiOutlineAdjustments className="text-gray-500 text-lg" />
+          <label className="block text-sm font-medium text-gray-700" htmlFor="ssh-status-filter">
+            SSH Status
+          </label>
+          <select
+            id="ssh-status-filter"
+            className="ml-2 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+            value={sshStatusFilter}
+            onChange={e => setSshStatusFilter(e.target.value as "" | "online" | "offline")}
+          >
+            <option value="">All</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
           </select>
         </div>
       </div>

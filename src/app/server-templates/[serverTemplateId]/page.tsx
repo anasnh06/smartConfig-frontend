@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Layers } from "lucide-react";
+import { Layers, ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -43,35 +43,40 @@ export default function ServerTemplateDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeader
-        title={
-          serverTemplate
-            ? `Server Template #${serverTemplate.id}`
-            : "Loading..."
-        }
-        description="Detailed information and linked server configurations."
-        icon={<Layers className="h-6 w-6" />}
-        action={
-          serverTemplate && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openEditServerTemplateModal(serverTemplate)}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => openDeleteServerTemplateModal(serverTemplate)}
-              >
-                Delete
-              </Button>
-            </div>
-          )
-        }
-      />
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <PageHeader
+          title={
+            serverTemplate
+              ? `Server Template #${serverTemplate.id}`
+              : "Loading..."
+          }
+          description="Detailed information and linked server configurations."
+          icon={<Layers className="h-6 w-6" />}
+          action={
+            serverTemplate && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditServerTemplateModal(serverTemplate)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => openDeleteServerTemplateModal(serverTemplate)}
+                >
+                  Delete
+                </Button>
+              </div>
+            )
+          }
+        />
+      </div>
 
       {serverTemplate ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white border rounded-lg shadow p-4 text-sm">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Trash, ServerIcon } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useServersStore } from "@/lib/store/servers";
 import { getServer } from "@/lib/api/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export default function ServerDetailPage() {
   const router = useRouter();
   const serverId = Number(params.serverId);
   const store = useStore();
+  const { getServerSshStatus, serverStatus } = useServersStore();
 
   const [server, setServer] = useState<Server | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,19 +42,35 @@ export default function ServerDetailPage() {
 
   const handleDeleted = () => router.push("/servers");
 
+  // Charger le statut SSH au montage
+  useEffect(() => {
+    if (serverId) {
+      getServerSshStatus(serverId);
+    }
+  }, [serverId, getServerSshStatus]);
+
   useEffect(() => {
     fetchServer();
   }, [serverId]);
+
+  // Déterminer le statut SSH
+  const sshStatus = serverStatus[serverId] || "offline";
 
   const configurationColumns: ColumnDef<any>[] = [
     {
       accessorKey: "configuration.name",
       header: "Configuration",
-      cell: ({ row }) => (
-        <Link href={`/configurations/${row.original.configuration.id}`} className="font-medium hover:underline">
-          {row.original.configuration.name}
-        </Link>
-      ),
+      cell: ({ row }) => {
+        const config = row.original.configuration;
+        if (!config) {
+          return <span className="text-gray-400 italic">No configuration</span>;
+        }
+        return (
+          <Link href={`/configurations/${config.id}`} className="font-medium hover:underline">
+            {config.name}
+          </Link>
+        );
+      },
     },
     {
       accessorKey: "status",
@@ -162,6 +180,20 @@ export default function ServerDetailPage() {
                 <div>
                   <dt className="text-xs font-semibold text-gray-500 uppercase">Updated At</dt>
                   <dd className="text-sm text-gray-900">{server.updated_at ? new Date(server.updated_at).toLocaleString() : "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold text-gray-500 uppercase">SSH Status</dt>
+                  <dd>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs ${
+                        sshStatus === "online"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {sshStatus === "online" ? "Online" : "Offline"}
+                    </span>
+                  </dd>
                 </div>
               </dl>
             </CardContent>

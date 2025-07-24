@@ -58,3 +58,8 @@ export async function deleteServer(id: number): Promise<void> {
     throw new Error(error.detail || "❌ Failed to delete server")
   }
 }
+export async function getServerSshStatus(id: number): Promise<{ status: string }> {
+  const res = await fetch(`${API_URL}/api/v1/servers/${id}/ssh-status`, { credentials: "include" });
+  if (!res.ok) throw new Error("❌ Failed to fetch SSH status");
+  return res.json();
+}

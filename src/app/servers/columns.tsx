@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Server } from "@/types/entities"
 import { useStore } from "@/lib/store"
+import { useServersStore } from "@/lib/store/servers"
+import { useEffect } from "react"
 
 export const columns: ColumnDef<Server>[] = [
   {
@@ -35,6 +37,34 @@ export const columns: ColumnDef<Server>[] = [
     cell: ({ row }) => (
       <span className="font-mono text-gray-700">{row.getValue("ip_address")}</span>
     ),
+  },
+  {
+    id: "ssh_status",
+    header: () => <span className="text-gray-900 font-medium">SSH Status</span>,
+    cell: ({ row }) => {
+      const { getServerSshStatus, serverStatus } = useServersStore.getState(); // Utilisation du store
+
+      const serverId = row.original.id;
+
+      useEffect(() => {
+        // Charger le statut SSH au premier rendu
+        if (!serverStatus[serverId]) {
+          getServerSshStatus(serverId);
+        }
+      }, [serverId, getServerSshStatus, serverStatus]);
+
+      const status = serverStatus[serverId] || "offline"; // Si aucune donnée, on marque comme offline
+
+      return (
+        <span
+          className={`px-2 py-0.5 rounded text-xs ${
+            status === "online" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}
+        >
+          {status === "online" ? "Online" : "Offline"}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "operating_system",

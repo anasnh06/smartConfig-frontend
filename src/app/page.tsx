@@ -15,7 +15,9 @@ export default function Dashboard() {
   const maintenanceServers = servers.filter((server) => server.status === "maintenance").length
 
   // Get recent executions
-  const recentExecutions = executions.slice(0, 5)
+  const recentExecutions = executions
+    .slice(0, 5)
+    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
 
   // Get servers with issues
   const serversWithIssues = servers.filter((server) => server.status !== "online").slice(0, 3)
@@ -43,7 +45,7 @@ export default function Dashboard() {
             <FileCode className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">20</div>
             <p className="text-xs text-muted-foreground">Ready to deploy</p>
           </CardContent>
         </Card>
@@ -53,7 +55,7 @@ export default function Dashboard() {
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7</div>
+            <div className="text-2xl font-bold">2</div>
             <p className="text-xs text-muted-foreground">Available for deployment</p>
           </CardContent>
         </Card>
@@ -63,7 +65,7 @@ export default function Dashboard() {
             <Play className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">10</div>
+            <div className="text-2xl font-bold">5</div>
             <p className="text-xs text-muted-foreground">In the last 30 days</p>
           </CardContent>
         </Card>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Edit, Trash, Play, FileCode, Server, LayoutTemplate, User } from "lucide-react"
+import type { ColumnDef } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,12 +14,17 @@ import { useStore } from "@/lib/store"
 import { getConfiguration } from "@/lib/api/configuration"
 import { EditConfigurationModal } from "@/components/configurations/edit-configuration-modal"
 import { DeleteConfigurationModal } from "@/components/configurations/delete-configuration-modal"
+import { DataTable } from "@/components/ui/data-table";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { useServerConfigurationsStore } from "@/lib/store/server_configurations";
 import type { Configuration } from "@/types/entities"
 
 export default function ConfigurationDetailPage() {
   const { configId } = useParams()
   const store = useStore()
+  const { fetchServerConfigurationsByConfigId, serverConfigurations } = useServerConfigurationsStore();
   const [configuration, setConfiguration] = useState<Configuration | null>(null)
+  const [serverConfigsLoading, setServerConfigsLoading] = useState(true);
 
   const fetchConfiguration = async () => {
     try {
@@ -30,7 +36,9 @@ export default function ConfigurationDetailPage() {
   }
 
   useEffect(() => {
-    fetchConfiguration()
+    fetchConfiguration();
+    setServerConfigsLoading(true);
+    fetchServerConfigurationsByConfigId(Number(configId)).finally(() => setServerConfigsLoading(false));
   }, [configId])
 
   if (!configuration) {
@@ -49,6 +57,29 @@ export default function ConfigurationDetailPage() {
 
   const serverCount = configuration.configuration_servers?.length ?? 0
   const templateCount = configuration.configuration_templates?.length ?? 0
+
+  // Colonnes pour le tableau des serveurs associés à la configuration
+  const serverConfigColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "server.name",
+      header: "Server Name",
+      cell: ({ row }) => (
+        <Link href={`/servers/${row.original.server.id}`} className="font-medium hover:underline text-blue-700">
+          {row.original.server.name}
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "server.ip_address",
+      header: "IP Address",
+      cell: ({ row }) => row.original.server.ip_address,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-10 px-2 sm:px-8">
@@ -209,24 +240,11 @@ export default function ConfigurationDetailPage() {
             <Server className="h-5 w-5 text-gray-500" />
             Associated Servers
           </h2>
-          {serverCount > 0 ? (
+          {serverConfigsLoading ? (
+            <p className="text-gray-400">Loading...</p>
+          ) : serverConfigurations && serverConfigurations.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border border-gray-100 rounded-lg">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Server ID</th>
-                    {/* Placeholder for future status/columns */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {configuration.configuration_servers.map((cs, index) => (
-                    <tr key={index} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-2">{cs.id}</td>
-                      {/* Add more <td> for status, etc. */}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <DataTable columns={serverConfigColumns} data={serverConfigurations} />
             </div>
           ) : (
             <p className="text-gray-400">No servers associated with this configuration.</p>

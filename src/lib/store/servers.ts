@@ -5,24 +5,28 @@ import {
   createServer,
   updateServer,
   deleteServer,
+  getServerSshStatus,
 } from "@/lib/api/server"
 
 interface ServersStore {
   servers: Server[]
   loading: boolean
   error: string | null
+  serverStatus: { [key: number]: string }; // Ajoute un état pour le statut SSH des serveurs
 
   fetchServers: () => Promise<void>
   reloadServers: () => Promise<void>
   addServer: (data: CreateServerData) => Promise<void>
   updateServer: (id: number, data: UpdateServerData) => Promise<void>
   removeServer: (id: number) => Promise<void>
+  getServerSshStatus: (id: number) => Promise<void>
 }
 
 export const useServersStore = create<ServersStore>((set, get) => ({
   servers: [],
   loading: false,
   error: null,
+  serverStatus: {}, // Initialisation du statut SSH
 
   fetchServers: async () => {
     set({ loading: true, error: null })
@@ -70,6 +74,20 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       })
     } catch (error: any) {
       set({ error: error.message })
+    }
+  },
+
+  getServerSshStatus: async (id) => {
+    try {
+      const status = await getServerSshStatus(id);
+      set((state) => ({
+        serverStatus: {
+          ...state.serverStatus,
+          [id]: status.status,
+        },
+      }));
+    } catch (error: any) {
+      set({ error: error.message });
     }
   },
 }))

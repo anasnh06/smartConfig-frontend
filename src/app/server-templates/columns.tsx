@@ -8,6 +8,7 @@ import { useStore } from "@/lib/store";
 import { Edit, Trash, Eye } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Context = "server" | "template" | "group";
 type ST = ServerTemplateShort | ServerTemplate;
@@ -40,11 +41,7 @@ export function getServerTemplateColumns(context: Context): ColumnDef<ST>[] {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }: { row: Row<ST> }) => (
-        <Badge variant="outline" className="capitalize">
-          {row.original.status ?? "unknown"}
-        </Badge>
-      ),
+      cell: ({ row }) => <StatusBadge status={(row.original.status || "unknown") as any} />,
     },
     {
       accessorKey: "server_configurations",

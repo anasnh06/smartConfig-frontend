@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -13,17 +13,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { useToast } from "@/components/ui/use-toast"
 import { useUsersStore } from "@/lib/store/users"
+import { Switch } from "@/components/ui/switch"
 
 const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  is_active: z.boolean(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -36,17 +45,24 @@ export function CreateUserModal() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-      email: "",
-      password: "",
-    },
   })
+
+  // ✅ Réinitialise les valeurs par défaut à chaque ouverture
+  useEffect(() => {
+    if (isCreateUserModalOpen) {
+      form.reset({
+        username: "",
+        email: "",
+        password: "",
+        is_active: true, // ou false si tu veux inactif par défaut
+      })
+    }
+  }, [isCreateUserModalOpen, form])
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
     try {
-      await addUser({ ...values, is_active: true }) // Ajoute is_active manuellement ici si nécessaire
+      await addUser(values)
       toast({
         title: "User created",
         description: `${values.username} has been created successfully.`,
@@ -112,6 +128,25 @@ export function CreateUserModal() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="is_active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Active</FormLabel>
+                    <DialogDescription>Is this user active?</DialogDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closeCreateUserModal}>
                 Cancel

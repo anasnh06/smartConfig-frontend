@@ -72,3 +72,11 @@ export async function deleteServerTemplate(id: number): Promise<void> {
     throw new Error(error.detail || "❌ Failed to delete server template")
   }
 }
+
+export async function getServerTemplatesByTemplateId(templateId: number): Promise<ServerTemplate[]> {
+  const res = await fetch(`${API_URL}/api/v1/server-templates/?template_id=${templateId}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("❌ Failed to fetch server templates for template");
+  return res.json();
+}

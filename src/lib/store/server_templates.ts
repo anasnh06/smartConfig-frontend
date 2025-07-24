@@ -5,6 +5,7 @@ import {
   createServerTemplate,
   updateServerTemplate,
   deleteServerTemplate,
+  getServerTemplatesByTemplateId,
 } from "@/lib/api/server_template"
 
 interface ServerTemplatesStore {
@@ -17,6 +18,7 @@ interface ServerTemplatesStore {
   addServerTemplate: (data: CreateServerTemplateData) => Promise<void>
   updateServerTemplate: (id: number, data: UpdateServerTemplateData) => Promise<void>
   removeServerTemplate: (id: number) => Promise<void>
+  fetchServerTemplatesByTemplateId: (templateId: number) => Promise<ServerTemplate[]>
 }
 
 export const useServerTemplatesStore = create<ServerTemplatesStore>((set, get) => ({
@@ -68,6 +70,20 @@ export const useServerTemplatesStore = create<ServerTemplatesStore>((set, get) =
       })
     } catch (error: any) {
       set({ error: error.message })
+    }
+  },
+
+  fetchServerTemplatesByTemplateId: async (templateId) => {
+    set({ loading: true, error: null })
+    try {
+      const serverTemplates = await getServerTemplatesByTemplateId(templateId)
+      set({ serverTemplates })
+      return serverTemplates
+    } catch (error: any) {
+      set({ error: error.message })
+      return []
+    } finally {
+      set({ loading: false })
     }
   },
 }))

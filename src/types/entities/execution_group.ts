@@ -20,6 +20,7 @@ export type ExecutionGroup = {
   status?: string
   playbook_path?: string
   inventory_path?: string
+  log_path?: string
   started_at?: string
   finished_at?: string
   created_at: string
